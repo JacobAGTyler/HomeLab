@@ -1,0 +1,11 @@
+---
+- name: Update Servers
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Do Updates
+      apt:
+        update_cache: yes
+        state: latest
