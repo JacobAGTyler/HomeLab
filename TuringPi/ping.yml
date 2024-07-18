@@ -1,6 +1,10 @@
 ---
-hosts: all
+- name: Ping Servers
+  hosts: all
+  become: true
+  gather_facts: true
 
-tasks:
-    - name: Ping
-      ping: true
+  tasks:
+    - name: Test Connection
+      ping:
+      remote_user: ubuntu
