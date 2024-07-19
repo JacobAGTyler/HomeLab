@@ -20,7 +20,7 @@
             dest: /home/ubuntu/k3s.sh
       - name: Run Script
         shell:
-            cmd: k3s.sh
+            cmd: sh k3s.sh
             chdir: /home/ubuntu/
 
 #        curl -sfL https://get.k3s.io | K3S_TOKEN=12345 sh -s - server --flannel-backend none
