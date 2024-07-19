@@ -1,0 +1,11 @@
+---
+  - name: Configure SSH Key Security
+    hosts: all
+    become: true
+
+    tasks:
+      - name: Set Authorized Key taken from file
+        authorized_key:
+          user: ubuntu
+          state: present
+          key: "{{ SSH_PUB_KEY }}"
