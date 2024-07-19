@@ -1,0 +1,11 @@
+---
+- name: Power Down Servers
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Shutdown
+      community.general.shutdown:
+        msg: "Shut down initiated by Ansible"
+        delay: 0
