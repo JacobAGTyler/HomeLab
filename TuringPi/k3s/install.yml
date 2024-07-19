@@ -5,6 +5,10 @@
   gather_facts: true
 
   tasks:
+      - name: Create Config Directory
+        file:
+            path: /etc/rancher/k3s
+            state: directory
       - name: Create Config File
         template:
             src: config.yaml.j2
