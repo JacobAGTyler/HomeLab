@@ -21,6 +21,6 @@
       - name: Run Script
         shell:
             cmd: k3s.sh
-            chdir: /home/ubuntu
+            chdir: /home/ubuntu/
 
 #        curl -sfL https://get.k3s.io | K3S_TOKEN=12345 sh -s - server --flannel-backend none
