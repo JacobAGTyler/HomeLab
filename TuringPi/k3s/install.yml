@@ -1,26 +1,39 @@
 ---
-- name: Install K3S on the Servers
-  hosts: all
-  become: true
-  gather_facts: true
+name: Install K3S on the Servers
+hosts: all
+become: true
+gather_facts: true
 
-  tasks:
-      - name: Create Config Directory
-        file:
-            path: /etc/rancher/k3s
-            state: directory
-      - name: Create Config File
-        template:
-            src: config.yaml.j2
-            backup: true
-            dest: /etc/rancher/k3s/config.yaml
-      - name: Download K3S Script
-        get_url:
-            url: https://get.k3s.io
-            dest: /home/ubuntu/k3s.sh
-      - name: Run Script
-        shell:
-            cmd: sh k3s.sh
-            chdir: /home/ubuntu/
+tasks:
+    - name: Create Config Directory
+      file:
+          path: /etc/rancher/k3s
+          state: directory
+    - name: Create Primary Config File
+      template:
+          src: primary-config.yaml.j2
+          backup: true
+          dest: /etc/rancher/k3s/config.yaml
+      when: inventory_hostname == 'node1'
+    - name: Create Secondary Config File
+      template:
+          src: secondary-config.yaml.j2
+          backup: true
+          dest: /etc/rancher/k3s/config.yaml
+      when: inventory_hostname in ['node2', 'node3']
+    - name: Create Worker Config File
+      template:
+          src: worker-config.yaml.j2
+          backup: true
+          dest: /etc/rancher/k3s/config.yaml
+      when: inventory_hostname == 'node4'
+    - name: Download K3S Script
+      get_url:
+          url: https://get.k3s.io
+          dest: /home/ubuntu/k3s.sh
+    - name: Run Script
+      shell:
+          cmd: sh k3s.sh
+          chdir: /home/ubuntu/
 
 #        curl -sfL https://get.k3s.io | K3S_TOKEN=12345 sh -s - server --flannel-backend none

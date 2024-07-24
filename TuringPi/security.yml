@@ -8,4 +8,4 @@
         authorized_key:
           user: ubuntu
           state: present
-          key: "{{ SSH_PUB_KEY }}"
+          key: "{{ ssh_pub_key }}"

@@ -1,8 +1,9 @@
 write-kubeconfig-mode: "0644"
-token: {{ CLUSTER_TOKEN }}
+token: {{ cluster_token }}
 tls-san:
   - "turing-lab.local"
 #node-label:
 #  - "foo=bar"
 #  - "something=amazing"
-cluster-init: true
+server: false
+cluster-init: false
