@@ -38,6 +38,11 @@
             path: /etc/rancher/k3s/config.yaml.d
             state: directory
 
+      - name: Remove Existing Config Files
+        file:
+            path: /etc/rancher/k3s/config.yaml
+            state: absent
+
       - name: Create Base Config File
         template:
             src: base-config.yaml.j2
@@ -79,12 +84,17 @@
             url: https://get.k3s.io
             dest: /home/ubuntu/k3s.sh
       
-      - name: Run Script
+      - name: Run Server Script
         shell:
-            cmd: sh k3s.sh
+            cmd: sh k3s.sh server
             chdir: /home/ubuntu/
+        when: inventory_hostname in ['node1', 'node2', 'node3']
 
-        #        curl -sfL https://get.k3s.io | K3S_TOKEN=12345 sh -s - server --flannel-backend none
+      - name: Run Worker Script
+        shell:
+            cmd: sh k3s.sh server
+            chdir: /home/ubuntu/
+        when: inventory_hostname not in ['node1', 'node2', 'node3']
 
   handlers:
     - name: Reboot the server
