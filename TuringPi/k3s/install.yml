@@ -8,8 +8,8 @@
       - name: Set the new hostname
         hostname:
           name: "{{ inventory_hostname }}"
-        register: hostname_result
-        changed_when: hostname_result.changed
+        notify: 
+          - Reboot
 
       - name: Update /etc/hosts file
         lineinfile:
@@ -17,16 +17,16 @@
             regexp: '127\.0\.1\.1\s+.*'
             line: "127.0.1.1   {{ inventory_hostname }}"
             state: present
-        register: hosts_file_result
-        changed_when: hosts_file_result.changed
+        notify: 
+          - Reboot
 
       - name: Update /etc/hostname file
         lineinfile:
             path: /etc/hostname
             line: "{{ inventory_hostname }}"
             state: present
-        register: hostname_file_result
-        changed_when: hostname_file_result.changed
+        notify: 
+          - Reboot
 
       - name: Create Config Directory
         file:
@@ -46,20 +46,20 @@
       - name: Create Base Config File
         template:
             src: base-config.yaml.j2
-            backup: true
+            backup: false
             dest: /etc/rancher/k3s/config.yaml.d/base-config.yaml
       
       - name: Create Primary Config File
         template:
             src: primary-config.yaml.j2
-            backup: true
+            backup: false
             dest: /etc/rancher/k3s/config.yaml.d/primary-config.yaml
         when: inventory_hostname == 'node1'
 
       - name: Create Non-Primary Config File
         template:
             src: non-primary-config.yaml.j2
-            backup: true
+            backup: false
             dest: /etc/rancher/k3s/config.yaml.d/non-primary-config.yaml
         when: inventory_hostname != 'node1'
 
@@ -67,7 +67,7 @@
       - name: Create Secondary Config File
         template:
             src: secondary-config.yaml.j2
-            backup: true
+            backup: false
             dest: /etc/rancher/k3s/config.yaml.d/secondary-config.yaml
         when: inventory_hostname in ['node2', 'node3']
 
@@ -75,7 +75,7 @@
       - name: Create Worker Config File
         template:
             src: worker-config.yaml.j2
-            backup: true
+            backup: false
             dest: /etc/rancher/k3s/config.yaml.d/worker-config.yaml
         when: inventory_hostname not in ['node1', 'node2', 'node3']
       
@@ -92,12 +92,12 @@
 
       - name: Run Worker Script
         shell:
-            cmd: sh k3s.sh server
+            cmd: sh k3s.sh agent
             chdir: /home/ubuntu/
         when: inventory_hostname not in ['node1', 'node2', 'node3']
 
   handlers:
-    - name: Reboot the server
+    - name: Reboot
       reboot:
         msg: "Reboot initiated by Ansible for hostname change"
         connect_timeout: 5
@@ -105,7 +105,3 @@
         pre_reboot_delay: 0
         post_reboot_delay: 30
         test_command: whoami
-
-  post_tasks:
-    - name: Trigger reboot if necessary
-      meta: flush_handlers
