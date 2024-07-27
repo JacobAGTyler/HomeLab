@@ -92,7 +92,7 @@
 
       - name: Run Worker Script
         shell:
-            cmd: sh k3s.sh agent --server https://192.168.1.33:6443
+            cmd: sh k3s.sh agent --server https://10.3.0.11:6443
             chdir: /home/ubuntu/
         when: inventory_hostname not in ['node1', 'node2', 'node3']
 
