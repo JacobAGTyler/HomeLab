@@ -4,6 +4,10 @@ metadata:
   name: letsencrypt-prod
 spec:
   acme:
+    email: jacob@jacobagtyler.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: route53-issuer-account-key
     solvers:
     # this solver handles example.org challenges
     # and uses explicit credentials
