@@ -9,18 +9,10 @@ spec:
     privateKeySecretRef:
       name: route53-issuer-account-key
     solvers:
-    # this solver handles example.org challenges
-    # and uses explicit credentials
-    - selector:
-        dnsZones:
-          - "jacobagtyler.com"
-      dns01:
+    - dns01:
         route53:
           region: us-east-1
           hostedZoneID: Z1V49N7OG26NA3
-          # The AWS access key ID can be specified using the literal accessKeyID parameter
-          # or retrieved from a secret using the accessKeyIDSecretRef
-          # If using accessKeyID, omit the accessKeyIDSecretRef parameter and vice-versa
           accessKeyIDSecretRef:
             name: prod-route53-credentials-secret
             key: access-key-id

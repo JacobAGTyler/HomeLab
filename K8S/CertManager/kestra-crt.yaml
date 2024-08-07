@@ -1,0 +1,11 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kestra-tls-cert
+  namespace: kestra
+spec:
+  secretName: kestra-tls-cert
+  issuerRef:
+    name: letsencrypt-prod
+  dnsNames:
+  - kestra.jacobagtyler.com
