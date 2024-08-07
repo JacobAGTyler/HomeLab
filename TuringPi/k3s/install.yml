@@ -28,6 +28,9 @@
         notify: 
           - Reboot
 
+      - name: Run Handlers
+        meta: flush_handlers
+
       - name: Create Config Directory
         file:
             path: /etc/rancher/k3s
@@ -71,7 +74,6 @@
             dest: /etc/rancher/k3s/config.yaml.d/secondary-config.yaml
         when: inventory_hostname in ['node2', 'node3']
 
-      
       - name: Create Worker Config File
         template:
             src: worker-config.yaml.j2
