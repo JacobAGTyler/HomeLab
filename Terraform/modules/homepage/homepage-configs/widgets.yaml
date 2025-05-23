@@ -1,0 +1,21 @@
+- kubernetes:
+    cluster:
+      show: true
+      cpu: true
+      memory: true
+      showLabel: true
+      label: "cluster"
+    nodes:
+      show: true
+      cpu: true
+      memory: true
+      showLabel: true
+- unifi_console:
+    url: https://10.1.0.1
+    username: homepage
+    password: ${unifi_password}
+- resources:
+    backend: resources
+    expanded: true
+    cpu: true
+    memory: true

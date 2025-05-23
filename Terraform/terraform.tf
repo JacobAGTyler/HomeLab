@@ -18,6 +18,15 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = ">= 2.0"
     }
+    local = {
+      source  = "hashicorp/local"
+      version = ">= 2.0.0"
+    }
+
+    onepassword = {
+      source  = "1password/onepassword"
+      version = ">= 1.0.0"
+    }
   }
 }
 
@@ -29,4 +38,9 @@ provider "helm" {
 
 provider "kubernetes" {
   config_path    = "~/.kube/config"
+}
+
+provider "onepassword" {
+  account = "FGKXTWJXJFFNHFEW76RBZARQUA"
+  
 }

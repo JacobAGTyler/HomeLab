@@ -68,7 +68,15 @@ deployment:
   #   hostPath:
   #     path: /var/run/statsd-exporter
   # -- Additional initContainers (e.g. for setting file permission as shown below)
-  initContainers: []
+  initContainers:
+  # The "volume-permissions" init container is required if you run into permission issues.
+  # Related issue: https://github.com/containous/traefik/issues/6972
+  # - name: volume-permissions
+  #   image: busybox:1.36.1
+  #   command: ["sh", "-c", "chmod -Rv 600 /ssl-certs/*"]
+  #   volumeMounts:
+  #     - name: ssl-certs
+  #       mountPath: /ssl-certs
   # The "volume-permissions" init container is required if you run into permission issues.
   # Related issue: https://github.com/traefik/traefik-helm-chart/issues/396
   # - name: volume-permissions
@@ -107,6 +115,8 @@ podDisruptionBudget:
   maxUnavailable:
   minAvailable:
 
+# Set Traefik as your default Ingress Controller, according to Kubernetes 1.19+ changes.
+# https://kubernetes.io/blog/2020/09/03/heads-up-kubernetes-1-20-defaulting-to-kubernetes-1-19/
 # -- Create a default IngressClass for Traefik
 ingressClass:
   enabled: true
@@ -178,7 +188,7 @@ gatewayClass:
 ingressRoute:
   dashboard:
     # -- Create an IngressRoute for the dashboard
-    enabled: false
+    enabled: true
     # -- Additional ingressRoute annotations (e.g. for kubernetes.io/ingress.class)
     annotations: {}
     # -- Additional ingressRoute labels (e.g. for filtering IngressRoute by custom labels)
@@ -199,7 +209,7 @@ ingressRoute:
     tls: {}
   healthcheck:
     # -- Create an IngressRoute for the healthcheck probe
-    enabled: false
+    enabled: true
     # -- Additional ingressRoute annotations (e.g. for kubernetes.io/ingress.class)
     annotations: {}
     # -- Additional ingressRoute labels (e.g. for filtering IngressRoute by custom labels)
@@ -579,6 +589,26 @@ env:
   valueFrom:
     fieldRef:
       fieldPath: metadata.namespace
+#
+# Set your environment variables here...
+# 
+# DNS Challenge Credentials
+# ---
+# Route 53 Credentials:
+- name: AWS_ACCESS_KEY_ID
+  valueFrom:
+    secretKeyRef:
+      key: access-key-id
+      name: prod-route53-credentials-secret
+- name: AWS_SECRET_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      key: secret-access-key
+      name: prod-route53-credentials-secret
+- name: AWS_REGION
+  value: us-east-1
+- name: AWS_HOSTED_ZONE_ID
+  value: Z1V49N7OG26NA3
 
 # -- Environment variables to be passed to Traefik's binary from configMaps or secrets
 envFrom: []
@@ -602,7 +632,7 @@ ports:
     # If you want to access it from outside your cluster,
     # use `kubectl port-forward` or create a secure ingress
     expose:
-      default: false
+      default: true
     # -- The exposed port for this service
     exposedPort: 9000
     # -- The port protocol (TCP/UDP)
@@ -626,11 +656,11 @@ ports:
     # Port Redirections
     # Added in 2.2, you can make permanent redirects via entrypoints.
     # https://docs.traefik.io/routing/entrypoints/#redirection
-    # redirectTo:
-    #   port: websecure
+    redirectTo:
+      port: websecure
     #   (Optional)
-    #   priority: 10
-    #   permanent: true
+      priority: 10
+      permanent: true
     #
     # -- Trust forwarded headers information (X-Forwarded-*).
     # forwardedHeaders:
@@ -656,7 +686,7 @@ ports:
       keepAliveMaxTime:
   websecure:
     ## -- Enable this entrypoint as a default entrypoint. When a service doesn't explicitly set an entrypoint it will only use this entrypoint.
-    # asDefault: true
+    asDefault: true
     port: 8443
     # hostPort: 8443
     # containerPort: 8443
@@ -710,9 +740,9 @@ ports:
       enabled: true
       # this is the name of a TLSOption definition
       options: ""
-      certResolver: ""
-      domains: []
-      # - main: example.com
+      certResolver: route53
+      domains: 
+      - main: jacobagtyler.com
       #   sans:
       #     - foo.example.com
       #     - bar.example.com
@@ -804,18 +834,20 @@ autoscaling:
   # See EXAMPLES.md for more details.
   enabled: false
 
+
+# Persistent Storage
 persistence:
   # -- Enable persistence using Persistent Volume Claims
   # ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
   # It can be used to store TLS certificates, see `storage` in certResolvers
-  enabled: false
-  name: data
+  enabled: true
+  name: ssl-certs
   #  existingClaim: ""
-  accessMode: ReadWriteOnce
-  size: 128Mi
+  # accessMode: ReadWriteOnce
+  size: 256Mi
   # storageClass: ""
   # volumeName: ""
-  path: /data
+  path: /ssl-certs
   annotations: {}
   # -- Only mount a subpath of the Volume into the pod
   # subPath: ""
@@ -823,7 +855,17 @@ persistence:
 # -- Certificates resolvers configuration.
 # Ref: https://doc.traefik.io/traefik/https/acme/#certificate-resolvers
 # See EXAMPLES.md for more details.
-certResolvers: {}
+certResolvers: 
+  route53:
+    acme:
+      email: jacob@jacobagtyler.com
+      storage: acme.json
+      server: https://acme-v02.api.letsencrypt.org/directory
+      dnsChallenge:
+        provider: route53
+        resolvers:
+          - "1.1.1.1:53"
+          - "8.8.8.8:53"
 
 # -- If hostNetwork is true, runs traefik in the host network namespace
 # To prevent unschedulabel pods due to port collisions, if hostNetwork=true
@@ -968,4 +1010,6 @@ hub:
         # -- When insecureSkipVerify is set to true, the TLS connection accepts any certificate presented by the server. Default: false.
         insecureSkipVerify:
   # Enable export of errors logs to the platform. Default: true.
-  sendlogs:
+  sendlogs: true
+
+

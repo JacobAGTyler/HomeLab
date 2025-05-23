@@ -1,0 +1,154 @@
+# Global common variables
+imagePullSecrets: []
+nameOverride: "jt-waf"
+namespaceOverride: "bunkerweb"
+fullnameOverride: "bw-jt-waf"
+nodeSelector: {}
+
+# Settings related to BW in a k8s environment
+settings:
+  # Specify the name of an existing secret containing the values of certain sensitive parameters listed here with their corresponding keys :
+  # settings.misc.databaseUri : database-uri
+  # settings.redis.redisUsername : redis-username
+  # settings.redis.redisPassword : redis-password
+  # settings.ui.adminUsername : admin-username
+  # settings.ui.adminPassword : admin-password
+  # settings.ui.flaskSecret: flask-secret
+  # settings.ui.totpSecrets: totp-secrets
+  # redis.config.password : redis-password
+  # mariadb.config.user : mariadb-user
+  # mariadb.config.password : mariadb-password
+  existingSecret: "jt-waf-secret"
+  kubernetes:
+    namespaces: ""
+    ingressClass: ""
+    domainName: "cluster.local"
+  misc:
+    databaseUri: ""
+    dnsResolvers: "kube-dns.kube-system.svc.cluster.local"
+    apiWhitelistIp: "127.0.0.0/8 10.0.0.0/8"
+  redis:
+    useRedis: "yes"
+    redisHost: ""
+    redisUsername: ""
+    redisPassword: ""
+  ui:
+    wizard: true
+    ingress:
+      enabled: true
+      serverName: "bunkerweb.jacobagtyler.com"
+      serverPath: "/"
+      extraAnnotations: {}
+      tlsSecretName: ""
+    overrideAdminCreds: "no"
+
+# Service
+service:
+  enabled: true
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  annotations: {}
+
+# BunkerWeb variables
+bunkerweb:
+  repository: bunkerity/bunkerweb
+  pullPolicy: Always
+  tag: 1.6.1
+  podAnnotations: {}
+  podLabels: {}
+  securityContext:
+    runAsUser: 101
+    runAsGroup: 101
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  extraEnvs: []
+  livenessProbe:
+    exec:
+      command:
+        - /usr/share/bunkerweb/helpers/healthcheck.sh
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    timeoutSeconds: 1
+    failureThreshold: 3
+  readinessProbe:
+    exec:
+      command:
+        - /usr/share/bunkerweb/helpers/healthcheck.sh
+    initialDelaySeconds: 30
+    periodSeconds: 1
+    timeoutSeconds: 1
+    failureThreshold: 3
+
+# Scheduler variables
+scheduler:
+  repository: bunkerity/bunkerweb-scheduler
+  pullPolicy: Always
+  tag: 1.6.1
+  podAnnotations: {}
+  podLabels: {}
+  securityContext:
+    runAsUser: 101
+    runAsGroup: 101
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  extraEnvs: []
+  # todo : probes
+
+# Controller variables
+controller:
+  repository: bunkerity/bunkerweb-autoconf
+  pullPolicy: Always
+  tag: 1.6.1
+  podAnnotations: {}
+  podLabels: {}
+  securityContext:
+    runAsUser: 101
+    runAsGroup: 101
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  extraEnvs: []
+  # todo : probes
+
+ui:
+  enabled: true
+  repository: bunkerity/bunkerweb-ui
+  pullPolicy: Always
+  tag: 1.6.1
+  podAnnotations: {}
+  podLabels: {}
+  securityContext:
+    runAsUser: 101
+    runAsGroup: 101
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  extraEnvs: []
+  # todo : probes
+
+# Database variables
+mariadb:
+  enabled: true
+  persistence:
+    size: 5Gi
+    storageClass: ""
+  config:
+    randomRootPassword: "1"
+    database: "db"
+  args: []
+
+# Redis variables
+redis:
+  enabled: true
+
+# IngressClass variables
+ingressClass:
+  enabled: true
+  name: "bunkerweb"
+  controller: "bunkerweb.io/ingress-controller"

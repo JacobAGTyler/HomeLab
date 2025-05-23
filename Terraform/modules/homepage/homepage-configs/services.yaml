@@ -1,0 +1,35 @@
+---
+- My First Group:
+    - Home Assistant:
+        icon: home-assistant.svg
+        href: https://home-assistant.jacobagtyler.com
+        description: Local Home Automation
+        widget:
+          type: homeassistant
+          url: https://home-assistant.jacobagtyler.com
+          key: "${hass_token}"
+          custom:
+            - state: sensor.total_power
+            - state: sensor.total_energy_today
+              label: energy today
+            - template: "{{ states.switch|selectattr('state','equalto','on')|list|length }}"
+              label: switches on
+            - state: weather.forecast_home
+              label: wind speed
+              value: "{attributes.wind_speed} {attributes.wind_speed_unit}"
+
+- My Second Group:
+    - Unifi Controller:
+        icon: unifi.svg
+        href: https://unifi.ui.com
+        description: Network Controller Interface
+        widget:
+          type: unifi
+          url: https://10.1.0.1
+          username: "${unifi_username}"
+          password: "${unifi_password}"
+
+- My Third Group:
+    - My Third Service:
+        href: http://localhost/
+        description: Homepage is 😎
