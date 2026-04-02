@@ -1,0 +1,171 @@
+---
+- name: Migrate one control-plane node's k3s data-dir to SSD
+  hosts: all
+  become: true
+  gather_facts: true
+  serial: 1
+
+  vars:
+    allowed_control_plane_ssd_hosts:
+      - node1
+      - node2
+      - node5
+    k3s_ssd_disk: /dev/nvme0n1
+    k3s_ssd_partition: /dev/nvme0n1p1
+    k3s_ssd_fs_type: ext4
+    k3s_ssd_label: k3s-data
+    k3s_ssd_mount_path: /mnt/k3s-data
+    k3s_data_dir: /mnt/k3s-data/k3s
+    k3s_config_dropin_dir: /etc/rancher/k3s/config.yaml.d
+    k3s_data_dir_dropin: "{{ k3s_config_dropin_dir }}/data-dir-config.yaml"
+    k3s_existing_data_dir: /var/lib/rancher/k3s
+    etcd_snapshot_name: "pre-ssd-migration-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}"
+
+  pre_tasks:
+    - name: Fail if this playbook is run against a node outside the SSD migration allowlist
+      assert:
+        that:
+          - inventory_hostname in allowed_control_plane_ssd_hosts
+        fail_msg: "This playbook is only intended for {{ allowed_control_plane_ssd_hosts | join(', ') }}."
+
+    - name: Fail unless the run is limited to exactly one node
+      assert:
+        that:
+          - ansible_play_hosts_all | length == 1
+        fail_msg: "Run this playbook with --limit against exactly one node at a time."
+
+    - name: Show migration target
+      debug:
+        msg:
+          - "Migrating {{ inventory_hostname }}"
+          - "Disk: {{ k3s_ssd_disk }}"
+          - "Mount path: {{ k3s_ssd_mount_path }}"
+          - "k3s data-dir: {{ k3s_data_dir }}"
+
+    - name: Ensure the k3s config drop-in directory exists
+      file:
+        path: "{{ k3s_config_dropin_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Take a pre-migration etcd snapshot
+      command: "k3s etcd-snapshot save --name {{ etcd_snapshot_name }}"
+      register: etcd_snapshot_result
+      changed_when: true
+
+    - name: Gather block device facts
+      command: "lsblk -J -o NAME,KNAME,TYPE,FSTYPE,MOUNTPOINT {{ k3s_ssd_disk }}"
+      register: lsblk_target_disk
+      changed_when: false
+
+    - name: Gather filesystem signature information
+      command: "blkid {{ k3s_ssd_disk }}"
+      register: blkid_target_disk
+      changed_when: false
+      failed_when: false
+
+    - name: Gather partition table information
+      command: "parted -s {{ k3s_ssd_disk }} print"
+      register: parted_target_disk
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if the target disk already contains a filesystem signature
+      assert:
+        that:
+          - blkid_target_disk.rc != 0
+        fail_msg: "Refusing to continue because {{ k3s_ssd_disk }} already has a filesystem signature."
+
+    - name: Fail if the target disk already appears to contain partitions
+      assert:
+        that:
+          - "'Number  Start' not in parted_target_disk.stdout"
+        fail_msg: "Refusing to continue because {{ k3s_ssd_disk }} already appears to contain partitions."
+
+  tasks:
+    - name: Create a GPT partition table and primary partition on the SSD
+      community.general.parted:
+        device: "{{ k3s_ssd_disk }}"
+        label: gpt
+        number: 1
+        name: primary
+        part_start: 0%
+        part_end: 100%
+        state: present
+
+    - name: Create the SSD filesystem
+      community.general.filesystem:
+        dev: "{{ k3s_ssd_partition }}"
+        fstype: "{{ k3s_ssd_fs_type }}"
+        opts: "-L {{ k3s_ssd_label }}"
+
+    - name: Create the SSD mount point
+      file:
+        path: "{{ k3s_ssd_mount_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Mount the SSD persistently
+      ansible.posix.mount:
+        path: "{{ k3s_ssd_mount_path }}"
+        src: "LABEL={{ k3s_ssd_label }}"
+        fstype: "{{ k3s_ssd_fs_type }}"
+        opts: defaults,noatime
+        state: mounted
+
+    - name: Create the destination k3s data directory on SSD
+      file:
+        path: "{{ k3s_data_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Stop k3s before copying data
+      service:
+        name: k3s
+        state: stopped
+
+    - name: Copy k3s data to the SSD-backed data directory
+      command: "rsync -aHAXx --delete {{ k3s_existing_data_dir }}/ {{ k3s_data_dir }}/"
+      register: rsync_result
+      changed_when: true
+
+    - name: Configure k3s to use the SSD-backed data directory
+      template:
+        src: k3s/data-dir-config.yaml.j2
+        dest: "{{ k3s_data_dir_dropin }}"
+        mode: "0644"
+
+    - name: Start k3s after the data-dir move
+      service:
+        name: k3s
+        state: started
+
+    - name: Wait for the local k3s API to report ready
+      command: k3s kubectl get --raw=/readyz
+      register: readyz_result
+      retries: 30
+      delay: 5
+      until: readyz_result.stdout is search("ok")
+      changed_when: false
+
+    - name: Verify the node is Ready from the local control-plane view
+      command: "k3s kubectl get node {{ inventory_hostname }} -o jsonpath={.status.conditions[?(@.type=='Ready')].status}"
+      register: node_ready_result
+      retries: 12
+      delay: 5
+      until: node_ready_result.stdout == "True"
+      changed_when: false
+
+  post_tasks:
+    - name: Show completion summary
+      debug:
+        msg:
+          - "Finished migrating {{ inventory_hostname }}"
+          - "Snapshot: {{ etcd_snapshot_name }}"
+          - "SSD mount path: {{ k3s_ssd_mount_path }}"
+          - "k3s data-dir: {{ k3s_data_dir }}"
+          - "Override these vars with --extra-vars if a node uses a different SSD path or mount layout."

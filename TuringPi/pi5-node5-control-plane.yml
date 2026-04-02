@@ -1,0 +1,126 @@
+---
+- name: Join Raspberry Pi 5 as node5 control-plane server
+  hosts: node5
+  become: true
+  gather_facts: true
+
+  vars:
+    k3s_version: v1.30.3+k3s1
+    k3s_install_script_path: /home/ubuntu/k3s-install.sh
+    k3s_config_dir: /etc/rancher/k3s
+    k3s_config_dropin_dir: /etc/rancher/k3s/config.yaml.d
+    k3s_cluster_server: https://10.3.0.11:6443
+    k3s_data_dir: /mnt/k3s-data/k3s
+    k3s_ssd_disk: "{{ hostvars[inventory_hostname].k3s_ssd_disk | default('/dev/nvme0n1') }}"
+    k3s_ssd_partition: "{{ hostvars[inventory_hostname].k3s_ssd_partition | default('/dev/nvme0n1p1') }}"
+    k3s_ssd_fs_type: ext4
+    k3s_ssd_label: k3s-data
+    k3s_ssd_mount_path: /mnt/k3s-data
+
+  tasks:
+    - name: Fail until the node5 password placeholder has been replaced
+      assert:
+        that:
+          - ansible_password != "REPLACE_ME"
+        fail_msg: "Update node5 credentials in TuringPi/host-inventory.yml before running this playbook."
+
+    - name: Ensure the k3s config directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ k3s_config_dir }}"
+        - "{{ k3s_config_dropin_dir }}"
+
+    - name: Partition the SSD for k3s data
+      community.general.parted:
+        device: "{{ k3s_ssd_disk }}"
+        label: gpt
+        number: 1
+        name: primary
+        part_start: 0%
+        part_end: 100%
+        state: present
+
+    - name: Create the SSD filesystem
+      community.general.filesystem:
+        dev: "{{ k3s_ssd_partition }}"
+        fstype: "{{ k3s_ssd_fs_type }}"
+        opts: "-L {{ k3s_ssd_label }}"
+
+    - name: Create the SSD mount point
+      file:
+        path: "{{ k3s_ssd_mount_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Mount the SSD persistently
+      ansible.posix.mount:
+        path: "{{ k3s_ssd_mount_path }}"
+        src: "LABEL={{ k3s_ssd_label }}"
+        fstype: "{{ k3s_ssd_fs_type }}"
+        opts: defaults,noatime
+        state: mounted
+
+    - name: Create the SSD-backed k3s data directory
+      file:
+        path: "{{ k3s_data_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Write the base k3s config
+      copy:
+        dest: "{{ k3s_config_dropin_dir }}/base-config.yaml"
+        mode: "0644"
+        content: |
+          write-kubeconfig-mode: "0644"
+          token: {{ cluster_token }}
+          tls-san:
+            - "10.3.0.11"
+
+    - name: Write the control-plane join config
+      copy:
+        dest: "{{ k3s_config_dropin_dir }}/control-plane-config.yaml"
+        mode: "0644"
+        content: |
+          server: {{ k3s_cluster_server }}
+          server+: true
+
+    - name: Write the SSD-backed data-dir config
+      copy:
+        dest: "{{ k3s_config_dropin_dir }}/data-dir-config.yaml"
+        mode: "0644"
+        content: |
+          data-dir: {{ k3s_data_dir }}
+
+    - name: Download the k3s installer
+      get_url:
+        url: https://get.k3s.io
+        dest: "{{ k3s_install_script_path }}"
+        mode: "0755"
+
+    - name: Install k3s server on node5
+      command: "sh {{ k3s_install_script_path }} server"
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Ensure k3s is enabled and running
+      service:
+        name: k3s
+        enabled: true
+        state: started
+
+    - name: Wait for the local k3s API to report ready
+      command: k3s kubectl get --raw=/readyz
+      register: readyz_result
+      retries: 30
+      delay: 5
+      until: readyz_result.stdout is search("ok")
+      changed_when: false

@@ -132,12 +132,23 @@ spec:
         - name: local-path-provisioner
           image: rancher/local-path-provisioner:v0.0.31
           imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_MOUNT_PATH
+              value: /etc/config/
           command:
             - local-path-provisioner
             - --debug
             - start
             - --config
             - /etc/config/config.json
+            - --configmap-name
+            - local-path-config
+            - --configmap-namespace
+            - $(POD_NAMESPACE)
             - --service-account-name
             - local-path-provisioner-db-ssd-service-account
             - --provisioner-name

@@ -12,6 +12,8 @@ Layout:
 - [install/kustomization.yaml](/Users/jacob/Development/Homelab/K8S/ArgoCD/install/kustomization.yaml): installs Argo CD from the official pinned manifest
 - [install/namespace.yaml](/Users/jacob/Development/Homelab/K8S/ArgoCD/install/namespace.yaml): creates the `argocd` namespace
 - [install/argocd-server-service-patch.yaml](/Users/jacob/Development/Homelab/K8S/ArgoCD/install/argocd-server-service-patch.yaml): exposes the UI/API through MetalLB on `10.3.0.105`
+- [install/argocd-server-certificate.yaml](/Users/jacob/Development/Homelab/K8S/ArgoCD/install/argocd-server-certificate.yaml): requests a cert-manager certificate for `argo.jacobagtyler.com`
+- [install/argocd-cm-url-patch.yaml](/Users/jacob/Development/Homelab/K8S/ArgoCD/install/argocd-cm-url-patch.yaml): sets Argo CD's external URL to `https://argo.jacobagtyler.com`
 - [bootstrap/root-application.yaml](/Users/jacob/Development/Homelab/K8S/ArgoCD/bootstrap/root-application.yaml): root app pointing back at this repo
 - [apps/kustomization.yaml](/Users/jacob/Development/Homelab/K8S/ArgoCD/apps/kustomization.yaml): child applications managed by the root app
 
@@ -64,6 +66,7 @@ kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.pas
 
 Then log in at either:
 
+- [https://argo.jacobagtyler.com](https://argo.jacobagtyler.com)
 - [https://10.3.0.105](https://10.3.0.105)
 - or use `kubectl port-forward svc/argocd-server -n argocd 8080:443` and browse to [https://localhost:8080](https://localhost:8080)
 
@@ -72,4 +75,6 @@ Notes:
 - The root app currently manages the storage bundles in this repo.
 - You can add more child applications under [apps/](/Users/jacob/Development/Homelab/K8S/ArgoCD/apps).
 - This bootstrap exposes `argocd-server` via MetalLB on `10.3.0.105`.
+- Add a UniFi DNS record for `argo.jacobagtyler.com` pointing to `10.3.0.105`.
+- Argo CD uses the `argocd-server-tls` secret automatically when it exists, so no deployment restart should be required after the certificate is issued.
 - If you want a different IP, update [argocd-server-service-patch.yaml](/Users/jacob/Development/Homelab/K8S/ArgoCD/install/argocd-server-service-patch.yaml) and reapply the install kustomization.
