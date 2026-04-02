@@ -1,0 +1,7 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token op://Developer/CloudflareToken/Section_7ilm2nry2ggr2hpfemqevk5vp4/token
+    restart: unless-stopped
+
+# docker run cloudflare/cloudflared:latest tunnel --no-autoupdate run --token op://Developer/CloudflareToken/Section_7ilm2nry2ggr2hpfemqevk5vp4/token

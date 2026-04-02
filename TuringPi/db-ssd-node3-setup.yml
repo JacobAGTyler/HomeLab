@@ -1,0 +1,45 @@
+---
+- name: Prepare node3 NVMe SSD for database storage
+  hosts: node3
+  become: true
+  gather_facts: false
+
+  vars:
+    db_ssd_disk: /dev/nvme0n1
+    db_ssd_partition: /dev/nvme0n1p1
+    db_ssd_mount_path: /mnt/db-ssd
+    db_ssd_fs_type: ext4
+    db_ssd_label: db-ssd
+
+  tasks:
+    - name: Create a GPT partition table on the NVMe disk
+      community.general.parted:
+        device: "{{ db_ssd_disk }}"
+        label: gpt
+        number: 1
+        name: primary
+        part_start: 0%
+        part_end: 100%
+        state: present
+
+    - name: Create an ext4 filesystem on the NVMe partition
+      community.general.filesystem:
+        dev: "{{ db_ssd_partition }}"
+        fstype: "{{ db_ssd_fs_type }}"
+        opts: "-L {{ db_ssd_label }}"
+
+    - name: Create the mount point
+      file:
+        path: "{{ db_ssd_mount_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Persist the NVMe mount in fstab and mount it
+      ansible.posix.mount:
+        path: "{{ db_ssd_mount_path }}"
+        src: "LABEL={{ db_ssd_label }}"
+        fstype: "{{ db_ssd_fs_type }}"
+        opts: defaults,noatime
+        state: mounted

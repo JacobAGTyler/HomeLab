@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-example
+spec:
+  serviceName: postgres-example
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-example
+  template:
+    metadata:
+      labels:
+        app: postgres-example
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: storage.homelab/db-ssd
+                    operator: In
+                    values:
+                      - "true"
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - name: POSTGRES_PASSWORD
+              value: replace-me
+          ports:
+            - containerPort: 5432
+              name: postgres
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: local-db-ssd-rwo
+        resources:
+          requests:
+            storage: 100Gi

@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smoke-test-truenas-capacity
+  namespace: truenas-nfs-provisioner
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: truenas-capacity-rwx
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smoke-test-truenas-fast
+  namespace: truenas-nfs-provisioner
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: truenas-fast-rwx
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-smoke-test
+  namespace: truenas-nfs-provisioner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage-smoke-test
+  template:
+    metadata:
+      labels:
+        app: storage-smoke-test
+    spec:
+      containers:
+        - name: writer
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              date > /mnt/a/SUCCESS-A
+              date > /mnt/b/SUCCESS-B
+              sleep 3600
+          volumeMounts:
+            - name: truenas-capacity
+              mountPath: /mnt/a
+            - name: truenas-fast
+              mountPath: /mnt/b
+      volumes:
+        - name: truenas-capacity
+          persistentVolumeClaim:
+            claimName: smoke-test-truenas-capacity
+        - name: truenas-fast
+          persistentVolumeClaim:
+            claimName: smoke-test-truenas-fast

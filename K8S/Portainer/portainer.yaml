@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: portainer-sa-clusteradmin
+  namespace: portainer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: portainer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: portainer-sa-clusteradmin
+    namespace: portainer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: portainer
+  namespace: portainer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: portainer-tls
+  namespace: portainer
+spec:
+  secretName: portainer-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: portainer.jacobagtyler.com
+  dnsNames:
+    - portainer.jacobagtyler.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portainer
+  namespace: portainer
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: portainer
+      app.kubernetes.io/instance: portainer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: portainer
+        app.kubernetes.io/instance: portainer
+    spec:
+      serviceAccountName: portainer-sa-clusteradmin
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: portainer
+        - name: certs
+          secret:
+            secretName: portainer-tls
+      containers:
+        - name: portainer
+          image: portainer/portainer-ce:lts
+          imagePullPolicy: Always
+          args:
+            - --http-disabled
+            - --tlscert=/certs/tls.crt
+            - --tlskey=/certs/tls.key
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: certs
+              mountPath: /certs
+              readOnly: true
+          ports:
+            - name: https
+              containerPort: 9443
+              protocol: TCP
+            - name: tcp-edge
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 5
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 1
+            httpGet:
+              path: /
+              port: 9443
+              scheme: HTTPS
+          readinessProbe:
+            failureThreshold: 5
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 1
+            httpGet:
+              path: /
+              port: 9443
+              scheme: HTTPS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer
+  namespace: portainer
+  annotations:
+    metallb.io/ip-allocated-from-pool: main-pool
+    metallb.universe.tf/loadBalancerIPs: 10.3.0.101
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: portainer
+    app.kubernetes.io/instance: portainer
+  ports:
+    - name: https
+      port: 443
+      targetPort: 9443
+      protocol: TCP
+    - name: edge
+      port: 8000
+      targetPort: 8000
+      protocol: TCP

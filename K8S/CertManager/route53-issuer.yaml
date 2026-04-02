@@ -15,7 +15,7 @@ spec:
           hostedZoneID: Z1V49N7OG26NA3
           accessKeyIDSecretRef:
             name: prod-route53-credentials-secret
-            key: access-key-id
+            key: username
           secretAccessKeySecretRef:
             name: prod-route53-credentials-secret
-            key: secret-access-key
+            key: credential

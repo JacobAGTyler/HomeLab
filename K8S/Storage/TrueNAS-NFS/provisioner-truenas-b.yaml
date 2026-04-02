@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: truenas-ssd-nfs-provisioner
+  namespace: truenas-nfs-provisioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: truenas-ssd-nfs-provisioner
+  template:
+    metadata:
+      labels:
+        app: truenas-ssd-nfs-provisioner
+    spec:
+      serviceAccountName: nfs-subdir-external-provisioner
+      containers:
+        - name: nfs-subdir-external-provisioner
+          image: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.18
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PROVISIONER_NAME
+              value: homelab.jacobagtyler.com/truenas-ssd-nfs
+            - name: NFS_SERVER
+              value: REPLACE_WITH_TRUENAS_SSD_IP
+            - name: NFS_PATH
+              value: REPLACE_WITH_TRUENAS_SSD_EXPORT_PATH
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: REPLACE_WITH_TRUENAS_SSD_IP
+            path: REPLACE_WITH_TRUENAS_SSD_EXPORT_PATH
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: truenas-fast-rwx
+provisioner: homelab.jacobagtyler.com/truenas-ssd-nfs
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  pathPattern: "${.PVC.namespace}/${.PVC.name}"
+  onDelete: retain
+mountOptions:
+  - nfsvers=4.1
+  - hard
+  - noatime

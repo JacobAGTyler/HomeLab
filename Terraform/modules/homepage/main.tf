@@ -5,7 +5,7 @@ resource "kubernetes_namespace" "homepage_namespace" {
 }
 
 locals {
-    homepage_manifests = fileset("${path.module}/manifests", "*.yml")
+  homepage_manifests = fileset("${path.module}/manifests", "*.yml")
 }
 
 data "local_file" "homepage_manifest_files" {
@@ -22,7 +22,7 @@ resource "kubernetes_manifest" "homepage_manifests" {
 
 locals {
   credentials = {
-    hass_token = "op://Developer/Homepage - Dev Dashboard/Home Assistant Credentials/Long Lived Token"
+    hass_token     = "op://Developer/Homepage - Dev Dashboard/Home Assistant Credentials/Long Lived Token"
     unifi_username = "op://Developer/Homepage - Dev Dashboard/Unify Credentials/User"
     unifi_password = "op://Developer/Homepage - Dev Dashboard/Unify Credentials/Password"
   }
@@ -30,38 +30,38 @@ locals {
 
 resource "kubernetes_secret" "homepage_config" {
   metadata {
-    name = "homepage-config"
+    name      = "homepage-config"
     namespace = kubernetes_namespace.homepage_namespace.metadata.0.name
 
     labels = {
       "app.kubernetes.io/name" = "homepage"
     }
-  }    
+  }
 
   data = {
-    "bookmarks.yaml" = file("${path.module}/homepage-configs/bookmarks.yaml")
+    "bookmarks.yaml"  = file("${path.module}/homepage-configs/bookmarks.yaml")
     "kubernetes.yaml" = file("${path.module}/homepage-configs/kubernetes.yaml")
-    "services.yaml" = templatefile("${path.module}/homepage-configs/services.yaml", local.credentials)
-    "widgets.yaml" = templatefile("${path.module}/homepage-configs/widgets.yaml", local.credentials)
-    "settings.yaml" = ""
-    "custom.css" = ""
-    "custom.js" = ""
-    "docker.yaml" = ""
+    "services.yaml"   = templatefile("${path.module}/homepage-configs/services.yaml", local.credentials)
+    "widgets.yaml"    = templatefile("${path.module}/homepage-configs/widgets.yaml", local.credentials)
+    "settings.yaml"   = ""
+    "custom.css"      = ""
+    "custom.js"       = ""
+    "docker.yaml"     = ""
   }
 }
 
 resource "kubernetes_deployment_v1" "homepage_deployment" {
   metadata {
-    name = "homepage"
+    name      = "homepage"
     namespace = kubernetes_namespace.homepage_namespace.metadata.0.name
 
     labels = {
       "app.kubernetes.io/name" = "homepage"
     }
   }
-  
+
   spec {
-    replicas = 1
+    replicas               = 1
     revision_history_limit = 3
     strategy {
       type = "RollingUpdate"
@@ -80,38 +80,38 @@ resource "kubernetes_deployment_v1" "homepage_deployment" {
       }
 
       spec {
-        service_account_name = "homepage"
+        service_account_name            = "homepage"
         automount_service_account_token = true
-        dns_policy = "ClusterFirst"
-        enable_service_links = true
+        dns_policy                      = "ClusterFirst"
+        enable_service_links            = true
 
         container {
-          name = "homepage"
-          image = "ghcr.io/gethomepage/homepage:latest"
+          name              = "homepage"
+          image             = "ghcr.io/gethomepage/homepage:latest"
           image_pull_policy = "Always"
 
           resources {
             limits = {
               memory = "128Mi"
-              cpu = "500m"
+              cpu    = "500m"
             }
           }
 
           port {
-            name = "http"
+            name           = "http"
             container_port = 3000
-            protocol = "TCP"
+            protocol       = "TCP"
           }
 
           volume_mount {
             mount_path = "/app/config"
-            name = "homepage-config"
-            sub_path = "."
+            name       = "homepage-config"
+            sub_path   = "."
           }
 
           volume_mount {
             mount_path = "/app/config/logs"
-            name = "logs"
+            name       = "logs"
           }
         }
 

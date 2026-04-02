@@ -1,11 +1,11 @@
-terraform { 
-  cloud { 
-    
-    organization = "JacobAGTyler" 
+terraform {
+  cloud {
 
-    workspaces { 
-      name = "homelab-prod" 
-    } 
+    organization = "JacobAGTyler"
+
+    workspaces {
+      name = "homelab-prod"
+    }
   }
 
   required_providers {
@@ -32,15 +32,18 @@ terraform {
 
 provider "helm" {
   kubernetes {
-    config_path = "~/.kube/config"
+    config_path    = "~/.kube/config"
+    config_context = "homelab-k3s"
   }
 }
 
 provider "kubernetes" {
   config_path    = "~/.kube/config"
+  config_context = "homelab-k3s"
 }
+
 
 provider "onepassword" {
   account = "FGKXTWJXJFFNHFEW76RBZARQUA"
-  
+
 }
