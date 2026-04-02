@@ -1,7 +1,8 @@
 # CertManager and MetalLB Argo CD adoption plan
 
-This plan is for adopting the **full definition** of cert-manager and MetalLB
-into Argo CD, while still sequencing the takeover safely.
+This plan is for adopting the **configuration** of cert-manager and MetalLB
+into Argo CD, while leaving the currently working controller installations
+alone for now.
 
 ## What Argo CD should own
 
@@ -9,34 +10,30 @@ into Argo CD, while still sequencing the takeover safely.
 
 Argo CD should own:
 
-- the cert-manager Helm install
 - [route53-credentials-onepassworditem.yaml](/Users/jacob/Development/Homelab/K8S/CertManager/route53-credentials-onepassworditem.yaml)
 - [route53-issuer.yaml](/Users/jacob/Development/Homelab/K8S/CertManager/route53-issuer.yaml)
 
-with:
+Argo CD should not yet own:
 
-- `cert-manager-install` synced before `cert-manager-config`
+- the cert-manager controller installation
+- its Deployments/Services/CRDs
 
 ### MetalLB
 
 Argo CD should own:
 
-- the MetalLB Helm install
 - [ipaddresspool-main.yaml](/Users/jacob/Development/Homelab/K8S/metalLB/ipaddresspool-main.yaml)
 - [l2advertisement-main.yaml](/Users/jacob/Development/Homelab/K8S/metalLB/l2advertisement-main.yaml)
 
-with:
+Argo CD should not yet own:
 
-- `metallb-install` synced before `metallb-config`
+- the MetalLB controller/speaker installation
 
 ## Why this is the safe approach
 
-- It gives Argo CD ownership of both installs and config.
-- It pins install versions to what is already running:
-  - cert-manager `v1.20.0`
-  - MetalLB chart `0.14.9`
-- It still separates install and config so resources appear in a predictable
-  order.
+- It avoids ownership fights with already-installed controller resources.
+- It lets Argo CD own the declarative configuration that changes over time.
+- It minimizes disruption while your cluster API is still intermittently slow.
 
 ## Current comparison summary
 
@@ -52,21 +49,19 @@ with:
 
 1. Commit and push the new Argo app definitions.
 2. Let Argo CD create:
-   - `cert-manager-install`
    - `cert-manager-config`
-   - `metallb-install`
    - `metallb-config`
 3. Confirm both apps show `Synced`.
-4. Check for drift or ownership fights.
-5. After Argo is healthy, retire the old non-Argo install path to avoid
-   long-term ownership fights.
+4. Check for drift.
+5. Only later, if you really want full takeover, retire the old install method
+   first and then let Argo install the controllers.
 
 ## Warning signs to watch for
 
 - Repeated OutOfSync loops on `letsencrypt-prod`
 - `prod-route53-credentials-secret` not appearing from 1Password
-- MetalLB app trying to prune resources still actively managed elsewhere
-- cert-manager install app fighting Terraform/previous Helm ownership
+- MetalLB config no longer matching the live pool/adverts
+- cert-manager issuer or credential source no longer matching the live setup
 
 ## Suggested verification
 
