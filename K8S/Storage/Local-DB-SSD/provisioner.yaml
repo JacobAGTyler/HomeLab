@@ -143,12 +143,12 @@ spec:
             - local-path-provisioner
             - --debug
             - start
+            - --namespace
+            - $(POD_NAMESPACE)
             - --config
             - /etc/config/config.json
             - --configmap-name
             - local-path-config
-            - --configmap-namespace
-            - $(POD_NAMESPACE)
             - --service-account-name
             - local-path-provisioner-db-ssd-service-account
             - --provisioner-name
