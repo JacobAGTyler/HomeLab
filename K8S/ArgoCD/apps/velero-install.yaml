@@ -1,16 +1,22 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: velero
+  name: velero-install
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
-  source:
-    repoURL: https://github.com/JacobAGTyler/HomeLab.git
-    targetRevision: HEAD
-    path: K8S/Velero
+  sources:
+    - repoURL: https://vmware-tanzu.github.io/helm-charts
+      chart: velero
+      targetRevision: 11.4.0
+      helm:
+        valueFiles:
+          - $values/K8S/Velero/install-values.yaml
+    - repoURL: https://github.com/JacobAGTyler/HomeLab.git
+      targetRevision: HEAD
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: velero
@@ -22,3 +28,4 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - RespectIgnoreDifferences=true
+

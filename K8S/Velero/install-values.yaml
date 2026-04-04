@@ -19,20 +19,8 @@ resources:
     memory: 512Mi
 
 configuration:
-  backupStorageLocation:
-    - name: default
-      provider: aws
-      bucket: jacobagtyler-homelab-backup
-      default: true
-      credential:
-        name: velero-s3-credentials
-        key: cloud
-      config:
-        region: eu-west-01
-        s3ForcePathStyle: "false"
   volumeSnapshotLocation: []
   uploaderType: kopia
-  defaultBackupStorageLocation: default
   defaultBackupTTL: 720h
   storeValidationFrequency: 1m
   defaultVolumesToFsBackup: true
@@ -41,7 +29,7 @@ credentials:
   useSecret: true
   existingSecret: velero-s3-credentials
 
-backupsEnabled: true
+backupsEnabled: false
 snapshotsEnabled: false
 deployNodeAgent: true
 

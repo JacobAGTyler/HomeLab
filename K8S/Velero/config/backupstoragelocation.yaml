@@ -1,0 +1,17 @@
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: default
+  namespace: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: jacobagtyler-homelab-backup
+  credential:
+    name: velero-s3-credentials
+    key: cloud
+  config:
+    region: eu-west-01
+    s3ForcePathStyle: "false"
+  default: true
+

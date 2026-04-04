@@ -1,10 +1,10 @@
 # Velero
 
-This bundle installs Velero for cluster backups using a kustomize manifest set.
+This directory now splits Velero into a Helm install and repo-managed local config.
 
 It is tuned for this homelab in a few important ways:
 
-- Uses the official Velero Helm chart rendered into static YAML for GitOps use.
+- Uses the official Velero Helm chart directly through Argo CD.
 - Uses the AWS plugin against an S3-compatible object store.
 - Enables the node-agent and `kopia` uploader for filesystem backups.
 - Disables CSI volume snapshots, which fits the current local-path and NFS-backed storage setup better.
@@ -15,13 +15,12 @@ It is tuned for this homelab in a few important ways:
 - Velero app: `1.17.1`
 - AWS plugin: `1.13.1`
 
-## Before Applying
+## Layout
 
-Update [install-values.yaml](/Users/jacob/Development/Homelab/K8S/Velero/install-values.yaml):
-
-- `REPLACE_WITH_VELERO_BUCKET`
-- `REPLACE_WITH_VELERO_REGION`
-- `REPLACE_WITH_S3_ENDPOINT`
+- [install-values.yaml](/Users/jacob/Development/Homelab/K8S/Velero/install-values.yaml)
+  Values for the Helm install app
+- [config/kustomization.yaml](/Users/jacob/Development/Homelab/K8S/Velero/config/kustomization.yaml)
+  Local Velero resources kept in Git
 
 Create a 1Password item at:
 
@@ -39,18 +38,16 @@ If your S3 endpoint uses a private CA, add the CA bundle to the backup storage l
 
 ## What Gets Installed
 
-- Velero server deployment
-- Velero node-agent daemonset
-- Backup storage location named `default`
-- Two schedules:
+- Helm install app:
+  - Velero server deployment
+  - Velero node-agent daemonset
+  - Velero CRDs and RBAC
+- Config app:
+  - Backup storage location named `default`
+  - 1Password-backed credentials item
+  - Two schedules:
   - `daily-cluster` at `02:00`
   - `weekly-cluster` at `03:00` on Sundays
-
-## Apply
-
-```bash
-kubectl apply -k K8S/Velero
-```
 
 ## Verify
 
