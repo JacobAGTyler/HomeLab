@@ -6,3 +6,4 @@ resources:
   - metallb-config.yaml
   - storage-local-db-ssd.yaml
   - storage-truenas-nfs.yaml
+  - velero.yaml

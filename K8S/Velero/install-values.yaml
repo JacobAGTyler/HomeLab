@@ -1,0 +1,63 @@
+image:
+  repository: docker.io/velero/velero
+  tag: v1.17.1
+
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.13.1
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+configuration:
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: jacobagtyler-homelab-backup
+      default: true
+      credential:
+        name: velero-s3-credentials
+        key: cloud
+      config:
+        region: eu-west-01
+        s3ForcePathStyle: "false"
+  volumeSnapshotLocation: []
+  uploaderType: kopia
+  defaultBackupStorageLocation: default
+  defaultBackupTTL: 720h
+  storeValidationFrequency: 1m
+  defaultVolumesToFsBackup: true
+
+credentials:
+  useSecret: true
+  existingSecret: velero-s3-credentials
+
+backupsEnabled: true
+snapshotsEnabled: false
+deployNodeAgent: true
+
+nodeAgent:
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+

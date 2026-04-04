@@ -1,0 +1,16 @@
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: weekly-cluster
+  namespace: velero
+spec:
+  schedule: "0 3 * * 0"
+  template:
+    includedNamespaces:
+      - '*'
+    excludedNamespaces:
+      - velero
+    includeClusterResources: true
+    storageLocation: default
+    snapshotVolumes: false
+    ttl: 720h0m0s
