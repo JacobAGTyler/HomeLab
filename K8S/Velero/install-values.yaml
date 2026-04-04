@@ -61,3 +61,7 @@ nodeAgent:
       cpu: 500m
       memory: 512Mi
 
+kubectl:
+  image:
+    repository: docker.io/bitnami/kubectl
+    tag: "1.35.0"
