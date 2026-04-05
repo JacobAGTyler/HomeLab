@@ -19,7 +19,7 @@
     k3s_config_dropin_dir: /etc/rancher/k3s/config.yaml.d
     k3s_data_dir_dropin: "{{ k3s_config_dropin_dir }}/data-dir-config.yaml"
     k3s_existing_data_dir: /var/lib/rancher/k3s
-    etcd_snapshot_name: "pre-ssd-migration-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}"
+    etcd_snapshot_name: "pre-ssd-migration-{{ inventory_hostname }}-{{ ansible_facts['date_time']['iso8601_basic_short'] }}"
 
   pre_tasks:
     - name: Fail if this playbook is run against a node outside the SSD migration allowlist
@@ -153,10 +153,18 @@
       changed_when: false
 
     - name: Verify the node is Ready from the local control-plane view
-      command: "k3s kubectl get node {{ inventory_hostname }} -o jsonpath={.status.conditions[?(@.type=='Ready')].status}"
+      command:
+        argv:
+          - k3s
+          - kubectl
+          - get
+          - node
+          - "{{ inventory_hostname }}"
+          - -o
+          - jsonpath={.status.conditions[?(@.type=="Ready")].status}
       register: node_ready_result
-      retries: 12
-      delay: 5
+      retries: 25
+      delay: 15
       until: node_ready_result.stdout == "True"
       changed_when: false
 

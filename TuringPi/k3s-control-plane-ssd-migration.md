@@ -30,11 +30,11 @@ Do not run this against multiple control-plane nodes at once.
 2. Verifies the target disk looks blank before touching it
 3. Partitions and formats the SSD
 4. Mounts the SSD at `/mnt/k3s-data`
-4. Stops `k3s`
-5. Copies `/var/lib/rancher/k3s` to `/mnt/k3s-data/k3s`
-6. Adds a k3s config drop-in pointing `data-dir` at the SSD
-7. Restarts `k3s`
-8. Waits for local API readiness and Ready node state
+5. Stops `k3s`
+6. Copies `/var/lib/rancher/k3s` to `/mnt/k3s-data/k3s`
+7. Adds a k3s config drop-in pointing `data-dir` at the SSD
+8. Restarts `k3s`
+9. Waits for local API readiness and Ready node state
 
 ## Recommended rollout order
 
