@@ -7,6 +7,7 @@ spec:
   description: Homelab infrastructure services and cluster configuration
   sourceRepos:
     - https://github.com/JacobAGTyler/HomeLab.git
+    - ghcr.io/databasus/charts
   destinations:
     - namespace: '*'
       server: '*'
@@ -16,4 +17,3 @@ spec:
   namespaceResourceWhitelist:
     - group: '*'
       kind: '*'
-

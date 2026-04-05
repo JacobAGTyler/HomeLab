@@ -1,0 +1,317 @@
+---
+- name: Preflight and join a worker node to the k3s cluster
+  hosts: all
+  become: true
+  gather_facts: true
+  serial: 1
+
+  vars:
+    allowed_worker_hosts:
+      - node4
+    k3s_version: v1.30.3+k3s1
+    k3s_install_script_path: /home/ubuntu/k3s-install.sh
+    k3s_config_dir: /etc/rancher/k3s
+    k3s_config_dropin_dir: /etc/rancher/k3s/config.yaml.d
+    k3s_cluster_server: https://10.3.0.11:6443
+    k3s_ssd_disk: "{{ hostvars[inventory_hostname].k3s_ssd_disk | default('/dev/nvme0n1') }}"
+    k3s_ssd_partition: "{{ hostvars[inventory_hostname].k3s_ssd_partition | default('/dev/nvme0n1p1') }}"
+    k3s_ssd_fs_type: ext4
+    k3s_ssd_label: "k3s-data-{{ inventory_hostname }}"
+    k3s_ssd_mount_path: /mnt/k3s-data
+    k3s_data_dir: /mnt/k3s-data/k3s
+
+  pre_tasks:
+    - name: Fail if this playbook is run against a node outside the worker allowlist
+      assert:
+        that:
+          - inventory_hostname in allowed_worker_hosts
+        fail_msg: "This playbook is only intended for {{ allowed_worker_hosts | join(', ') }}."
+
+    - name: Fail unless the run is limited to exactly one node
+      assert:
+        that:
+          - ansible_play_hosts_all | length == 1
+        fail_msg: "Run this playbook with --limit against exactly one node at a time."
+
+    - name: Fail if cluster_token is not defined
+      assert:
+        that:
+          - cluster_token is defined
+          - cluster_token | length > 0
+        fail_msg: "Define cluster_token for the k3s join before running this playbook."
+
+    - name: Show join target
+      debug:
+        msg:
+          - "Joining worker {{ inventory_hostname }}"
+          - "Server endpoint: {{ k3s_cluster_server }}"
+          - "Disk: {{ k3s_ssd_disk }}"
+          - "Mount path: {{ k3s_ssd_mount_path }}"
+          - "k3s data-dir: {{ k3s_data_dir }}"
+
+    - name: Set hostname to match inventory
+      hostname:
+        name: "{{ inventory_hostname }}"
+      notify: Reboot after hostname change
+
+    - name: Ensure /etc/hosts contains the local hostname entry
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1\s+'
+        line: "127.0.1.1 {{ inventory_hostname }}"
+        state: present
+      notify: Reboot after hostname change
+
+    - name: Flush hostname handlers before k3s install
+      meta: flush_handlers
+
+    - name: Install baseline packages for k3s workers
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+          - iptables
+          - iproute2
+          - nfs-common
+        state: present
+        update_cache: true
+        lock_timeout: 120
+      register: worker_packages_result
+      retries: 3
+      delay: 15
+      until: worker_packages_result is succeeded
+      when: ansible_facts["os_family"] == "Debian"
+
+    - name: Gather block device facts
+      command: "lsblk -J -o NAME,KNAME,TYPE,FSTYPE,MOUNTPOINT {{ k3s_ssd_disk }}"
+      register: lsblk_target_disk
+      changed_when: false
+
+    - name: Gather filesystem signature information
+      command: "blkid {{ k3s_ssd_disk }}"
+      register: blkid_target_disk
+      changed_when: false
+      failed_when: false
+
+    - name: Check whether the expected SSD partition already exists
+      stat:
+        path: "{{ k3s_ssd_partition }}"
+      register: k3s_ssd_partition_stat
+
+    - name: Gather partition filesystem signature information
+      command: "blkid {{ k3s_ssd_partition }}"
+      register: blkid_target_partition
+      changed_when: false
+      failed_when: false
+
+    - name: Gather partition table information
+      command: "parted -s {{ k3s_ssd_disk }} print"
+      register: parted_target_disk
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if the raw disk has a filesystem signature without the expected partition
+      assert:
+        that:
+          - blkid_target_disk.rc != 0 or k3s_ssd_partition_stat.stat.exists
+        fail_msg: "Refusing to continue because {{ k3s_ssd_disk }} has a raw-disk filesystem signature and does not look like the expected partitioned layout."
+
+    - name: Fail if the disk has partitions but not the expected worker partition
+      assert:
+        that:
+          - "'Number  Start' not in parted_target_disk.stdout or k3s_ssd_partition_stat.stat.exists"
+        fail_msg: "Refusing to continue because {{ k3s_ssd_disk }} has an unexpected partition layout."
+
+    - name: Check whether the k3s agent binary already exists
+      stat:
+        path: /usr/local/bin/k3s-agent
+      register: k3s_agent_binary
+
+    - name: Check whether the k3s agent service file already exists
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service_file
+
+  tasks:
+    - name: Create a GPT partition table and primary partition on the SSD
+      community.general.parted:
+        device: "{{ k3s_ssd_disk }}"
+        label: gpt
+        number: 1
+        name: primary
+        part_start: 0%
+        part_end: 100%
+        state: present
+      when: not k3s_ssd_partition_stat.stat.exists
+
+    - name: Create the SSD filesystem
+      community.general.filesystem:
+        dev: "{{ k3s_ssd_partition }}"
+        fstype: "{{ k3s_ssd_fs_type }}"
+        opts: "-L {{ k3s_ssd_label }}"
+      when: blkid_target_partition.rc != 0
+
+    - name: Create the SSD mount point
+      file:
+        path: "{{ k3s_ssd_mount_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Mount the SSD persistently
+      ansible.posix.mount:
+        path: "{{ k3s_ssd_mount_path }}"
+        src: "LABEL={{ k3s_ssd_label }}"
+        fstype: "{{ k3s_ssd_fs_type }}"
+        opts: defaults,noatime
+        state: mounted
+
+    - name: Create the k3s config directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ k3s_config_dir }}"
+        - "{{ k3s_config_dropin_dir }}"
+
+    - name: Create the SSD-backed k3s data directory
+      file:
+        path: "{{ k3s_data_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Write the shared worker k3s config
+      template:
+        src: k3s/worker-base-config.yaml.j2
+        dest: "{{ k3s_config_dropin_dir }}/base-config.yaml"
+        mode: "0644"
+      notify: Restart k3s-agent
+
+    - name: Remove the obsolete worker role config drop-in
+      file:
+        path: "{{ k3s_config_dropin_dir }}/worker-config.yaml"
+        state: absent
+      notify: Restart k3s-agent
+
+    - name: Write the worker server config
+      copy:
+        dest: "{{ k3s_config_dropin_dir }}/server-config.yaml"
+        mode: "0644"
+        content: |
+          server: {{ k3s_cluster_server }}
+      notify: Restart k3s-agent
+
+    - name: Write the SSD-backed data-dir config
+      template:
+        src: k3s/data-dir-config.yaml.j2
+        dest: "{{ k3s_config_dropin_dir }}/data-dir-config.yaml"
+        mode: "0644"
+      notify: Restart k3s-agent
+
+    - name: Download the k3s installer
+      get_url:
+        url: https://get.k3s.io
+        dest: "{{ k3s_install_script_path }}"
+        mode: "0755"
+
+    - name: Install and start k3s-agent
+      block:
+        - name: Install k3s agent on the worker node
+          command: "sh {{ k3s_install_script_path }} agent"
+          environment:
+            INSTALL_K3S_VERSION: "{{ k3s_version }}"
+          args:
+            creates: /etc/systemd/system/k3s-agent.service
+          when: not k3s_agent_service_file.stat.exists
+
+        - name: Ensure k3s-agent is enabled and running
+          service:
+            name: k3s-agent
+            enabled: true
+            state: started
+
+        - name: Restart existing k3s-agent after resumed join attempts
+          service:
+            name: k3s-agent
+            state: restarted
+          when: k3s_agent_service_file.stat.exists
+
+        - name: Flush k3s-agent restart handlers before readiness checks
+          meta: flush_handlers
+
+        - name: Wait for the k3s-agent service to remain active
+          command: systemctl is-active k3s-agent
+          register: k3s_agent_active
+          retries: 20
+          delay: 5
+          until: k3s_agent_active.stdout == "active"
+          changed_when: false
+      rescue:
+        - name: Gather k3s-agent systemd status after failure
+          command: systemctl status k3s-agent --no-pager -l
+          register: k3s_agent_status
+          changed_when: false
+          failed_when: false
+
+        - name: Gather recent k3s-agent journal after failure
+          command: journalctl -u k3s-agent -n 80 --no-pager
+          register: k3s_agent_journal
+          changed_when: false
+          failed_when: false
+
+        - name: Show k3s-agent systemd status
+          debug:
+            var: k3s_agent_status.stdout_lines
+
+        - name: Show recent k3s-agent journal
+          debug:
+            var: k3s_agent_journal.stdout_lines
+
+        - name: Fail after collecting k3s-agent diagnostics
+          fail:
+            msg: "k3s-agent failed to start on {{ inventory_hostname }}. See the collected systemd status and journal output above."
+
+    - name: Verify the worker node is Ready from the control-plane view
+      command:
+        argv:
+          - k3s
+          - kubectl
+          - get
+          - node
+          - "{{ inventory_hostname }}"
+          - -o
+          - jsonpath={.status.conditions[?(@.type=="Ready")].status}
+      register: worker_ready_result
+      retries: 25
+      delay: 15
+      until: worker_ready_result.stdout == "True"
+      changed_when: false
+      delegate_to: node1
+
+  post_tasks:
+    - name: Show completion summary
+      debug:
+        msg:
+          - "Finished joining worker {{ inventory_hostname }}"
+          - "Server endpoint: {{ k3s_cluster_server }}"
+          - "SSD mount path: {{ k3s_ssd_mount_path }}"
+          - "k3s data-dir: {{ k3s_data_dir }}"
+
+  handlers:
+    - name: Reboot after hostname change
+      reboot:
+        msg: "Reboot initiated by Ansible for hostname change"
+        connect_timeout: 5
+        reboot_timeout: 900
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: whoami
+
+    - name: Restart k3s-agent
+      service:
+        name: k3s-agent
+        state: restarted

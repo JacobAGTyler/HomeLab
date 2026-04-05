@@ -8,6 +8,7 @@ resources:
 
   # Infrastructure Applications
   - apps/cert-manager-config.yaml
+  - apps/databasus.yaml
   - apps/metallb-config.yaml
   - apps/storage-local-db-ssd.yaml
   # - apps/storage-truenas-nfs.yaml
