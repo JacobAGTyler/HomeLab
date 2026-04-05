@@ -9,7 +9,7 @@ spec:
     - https://github.com/LBDistrictScouts/DistrictCoreData.git
   destinations:
     - namespace: district-core-data
-      server: https://kubernetes.default.svc
+      server: '*'
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'

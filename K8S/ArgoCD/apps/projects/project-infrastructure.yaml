@@ -8,14 +8,8 @@ spec:
   sourceRepos:
     - https://github.com/JacobAGTyler/HomeLab.git
   destinations:
-    - namespace: cert-manager
-      server: https://kubernetes.default.svc
-    - namespace: local-db-ssd
-      server: https://kubernetes.default.svc
-    - namespace: metallb-system
-      server: https://kubernetes.default.svc
-    - namespace: truenas-nfs-provisioner
-      server: https://kubernetes.default.svc
+    - namespace: '*'
+      server: '*'
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'
