@@ -1,0 +1,36 @@
+---
+- name: Install NFS client packages on k3s nodes
+  hosts: all
+  become: true
+  gather_facts: true
+  ignore_unreachable: true
+
+  tasks:
+    - name: Install NFS client packages on Debian-family nodes
+      ansible.builtin.apt:
+        name: nfs-common
+        state: present
+        update_cache: true
+        lock_timeout: 120
+      register: nfs_apt_result
+      retries: 3
+      delay: 15
+      until: nfs_apt_result is succeeded
+      when: ansible_facts["os_family"] == "Debian"
+
+    - name: Install NFS client packages on RedHat-family nodes
+      ansible.builtin.package:
+        name: nfs-utils
+        state: present
+      when: ansible_facts["os_family"] == "RedHat"
+
+    - name: Verify mount.nfs helper is present
+      ansible.builtin.shell: set -o pipefail && command -v mount.nfs || ls /sbin/mount.nfs /usr/sbin/mount.nfs 2>/dev/null | head -n 1
+      register: mount_nfs_check
+      changed_when: false
+      args:
+        executable: /bin/bash
+
+    - name: Show detected mount.nfs helper path
+      ansible.builtin.debug:
+        msg: "mount.nfs helper found at {{ mount_nfs_check.stdout }}"

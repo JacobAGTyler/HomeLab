@@ -26,7 +26,14 @@ Before you apply:
    - `REPLACE_WITH_TRUENAS_SSD_EXPORT_PATH`
 3. Make sure every k3s node has NFS client packages installed.
    - On Ubuntu/Debian that is usually `nfs-common`
+   - You can install it across the cluster with [install-nfs-client.yml](/Users/jacob/Development/Homelab/TuringPi/install-nfs-client.yml)
 4. Make sure each TrueNAS export allows mounts from your node network.
+
+Install the node-side NFS packages if you have not already:
+
+```bash
+ansible-playbook -i TuringPi/host-inventory.yml TuringPi/install-nfs-client.yml
+```
 
 Smoke test:
 
