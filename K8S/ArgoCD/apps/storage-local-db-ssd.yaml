@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/JacobAGTyler/HomeLab.git
-    targetRevision: HEAD
+    targetRevision: main
     path: K8S/Storage/Local-DB-SSD
   destination:
     server: https://kubernetes.default.svc

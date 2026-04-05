@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/JacobAGTyler/HomeLab.git
-    targetRevision: HEAD
+    targetRevision: main
     path: K8S/metalLB
   destination:
     server: https://kubernetes.default.svc
