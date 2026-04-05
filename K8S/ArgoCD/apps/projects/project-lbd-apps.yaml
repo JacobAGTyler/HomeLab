@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lbd-apps
+  namespace: argocd
+spec:
+  description: LBDistrictScouts application workloads
+  sourceRepos:
+    - https://github.com/LBDistrictScouts/DistrictCoreData.git
+  destinations:
+    - namespace: district-core-data
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
