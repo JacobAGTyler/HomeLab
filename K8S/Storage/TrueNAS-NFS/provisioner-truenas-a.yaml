@@ -24,23 +24,24 @@ spec:
             - name: PROVISIONER_NAME
               value: homelab.jacobagtyler.com/truenas-hdd-nfs
             - name: NFS_SERVER
-              value: REPLACE_WITH_TRUENAS_HDD_IP
+              value: terra-nas.jacobagtyler.com
             - name: NFS_PATH
-              value: REPLACE_WITH_TRUENAS_HDD_EXPORT_PATH
+              value: /mnt/HDDs/K8S
           resources:
             requests:
               cpu: 50m
               memory: 64Mi
             limits:
               memory: 256Mi
+              cpu: 200m
           volumeMounts:
             - name: nfs-client-root
               mountPath: /persistentvolumes
       volumes:
         - name: nfs-client-root
           nfs:
-            server: REPLACE_WITH_TRUENAS_HDD_IP
-            path: REPLACE_WITH_TRUENAS_HDD_EXPORT_PATH
+            server: terra-nas.jacobagtyler.com
+            path: /mnt/HDDs/K8S
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
