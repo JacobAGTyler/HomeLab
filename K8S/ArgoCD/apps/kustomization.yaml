@@ -10,10 +10,11 @@ resources:
   - apps/cert-manager-config.yaml
   - apps/metallb-config.yaml
   - apps/storage-local-db-ssd.yaml
-  - apps/storage-truenas-nfs.yaml
+  # - apps/storage-truenas-nfs.yaml
 
   # LBD Applications
   - apps/district-core-data.yaml
+  - apps/event-booking-backend.yaml
 
   # Secrets
-  - secrets/repo-districtcoredata-secret.yaml
+  - secrets/repo-creds-lbdistrictscouts.yaml

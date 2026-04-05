@@ -7,8 +7,11 @@ spec:
   description: LBDistrictScouts application workloads
   sourceRepos:
     - https://github.com/LBDistrictScouts/DistrictCoreData.git
+    - https://github.com/LBDistrictScouts/EventBookingBackend.git
   destinations:
     - namespace: district-core-data
+      server: '*'
+    - namespace: event-booking
       server: '*'
   clusterResourceWhitelist:
     - group: '*'
@@ -16,4 +19,3 @@ spec:
   namespaceResourceWhitelist:
     - group: '*'
       kind: '*'
-
