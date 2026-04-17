@@ -33,6 +33,7 @@ The following directories currently have their own documentation:
 - ArgoCD Ingest:
     - Databacus
     - N8N
+    - Portainer
 - Infra:
     - RustFS
     - Prometheus + Monitoring
