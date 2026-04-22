@@ -84,6 +84,10 @@ data:
         {
           "node":"node3",
           "paths":["/mnt/db-ssd"]
+        },
+        {
+          "node":"node4",
+          "paths":["/mnt/db-ssd"]
         }
       ]
     }
@@ -124,6 +128,8 @@ spec:
       app: local-path-provisioner-db-ssd
   template:
     metadata:
+      annotations:
+        storage.homelab/config-generation: "2026-04-22-node4"
       labels:
         app: local-path-provisioner-db-ssd
     spec:

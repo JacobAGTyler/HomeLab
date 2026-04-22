@@ -1,8 +1,8 @@
 # Local SSD storage for databases
 
 This bundle creates a dedicated local-path provisioner for database-style
-workloads that should live on the directly attached 1TB SSD in a single k3s
-node.
+workloads that should live on directly attached SSD storage in selected k3s
+nodes.
 
 It is intended for:
 
@@ -24,18 +24,19 @@ Files:
 - [example-pvc.yaml](/Users/jacob/Development/Homelab/K8S/Storage/Local-DB-SSD/example-pvc.yaml)
 - [example-statefulset.yaml](/Users/jacob/Development/Homelab/K8S/Storage/Local-DB-SSD/example-statefulset.yaml)
 
-I checked the cluster nodes and found:
+The current DB SSD nodes are:
 
-- `node3` has the extra `nvme0n1` 931.5G SSD
-- the drive is currently unformatted and not mounted
+- `node3`
+- `node4`
 
 Before applying:
 
-1. Format and mount the SSD on `node3` at `/mnt/db-ssd`.
-2. Label the node:
+1. Format and mount the SSD on each DB SSD node at `/mnt/db-ssd`.
+2. Label each node:
 
 ```bash
 kubectl label node node3 storage.homelab/db-ssd=true
+kubectl label node node4 storage.homelab/db-ssd=true
 ```
 
 Apply with:
@@ -58,16 +59,17 @@ Recommended placement:
 
 Important:
 
-- This storage is fast, but it is single-node storage.
-- If that node fails, the PVC is not mountable elsewhere until you restore or
-  recover the node.
+- This storage is fast, but each volume is still tied to the node where it was
+  provisioned.
+- If that node fails, the PVC is not mountable elsewhere until you restore,
+  recover the node, or manually migrate the data.
 - For anything important, pair this with database replication and backups to
   TrueNAS.
 
-Suggested `node3` disk bootstrap:
+Suggested disk bootstrap for each DB SSD node:
 
 ```bash
-ssh ubuntu@10.3.0.13
+ssh ubuntu@<node-ip>
 sudo parted -s /dev/nvme0n1 mklabel gpt
 sudo parted -s /dev/nvme0n1 mkpart primary ext4 0% 100%
 sudo mkfs.ext4 -L db-ssd /dev/nvme0n1p1
