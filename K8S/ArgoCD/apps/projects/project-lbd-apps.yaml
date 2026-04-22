@@ -13,6 +13,8 @@ spec:
       server: '*'
     - namespace: event-booking
       server: '*'
+    - namespace: event-booking-test
+      server: '*'
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'

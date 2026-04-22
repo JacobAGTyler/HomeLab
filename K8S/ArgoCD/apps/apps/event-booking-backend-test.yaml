@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: event-booking-backend-test
+  namespace: argocd
+spec:
+  project: lbd-apps
+  source:
+    repoURL: https://github.com/LBDistrictScouts/EventBookingBackend.git
+    targetRevision: main
+    path: k8s/overlays/test
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: event-booking-test
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
