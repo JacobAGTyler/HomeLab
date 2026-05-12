@@ -9,7 +9,10 @@ spec:
     privateKeySecretRef:
       name: route53-issuer-account-key
     solvers:
-    - dns01:
+    - selector:
+        dnsZones:
+        - jacobagtyler.com
+      dns01:
         route53:
           region: us-east-1
           hostedZoneID: Z1V49N7OG26NA3
@@ -19,3 +22,18 @@ spec:
           secretAccessKeySecretRef:
             name: prod-route53-credentials-secret
             key: credential
+    - selector:
+        dnsZones:
+        - lbdscouts.org.uk
+        - lbd.org.uk
+        - 4thletchworth.com
+        - 7thletchworth.org.uk
+      dns01:
+        route53:
+          region: us-east-1
+          accessKeyIDSecretRef:
+            name: prod-route53-credentials-secret
+            key: lbd-username
+          secretAccessKeySecretRef:
+            name: prod-route53-credentials-secret
+            key: lbd-credential
