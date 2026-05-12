@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: district-cms-dev
+  namespace: argocd
+spec:
+  project: lbd-apps
+  source:
+    repoURL: https://github.com/LBDistrictScouts/DistrictCMS.git
+    targetRevision: main
+    path: k8s/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: district-cms-dev
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true

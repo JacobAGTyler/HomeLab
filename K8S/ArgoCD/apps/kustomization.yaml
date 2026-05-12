@@ -14,6 +14,8 @@ resources:
   # - apps/storage-truenas-nfs.yaml
 
   # LBD Applications
+  - apps/district-cms-dev.yaml
+  # - apps/district-cms-prod.yaml
   - apps/district-core-data.yaml
   - apps/event-booking-backend.yaml
   - apps/event-booking-backend-test.yaml
