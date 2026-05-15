@@ -17,6 +17,15 @@ spec:
       labels:
         app.kubernetes.io/name: homebox
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: storage.homelab/db-ssd
+                    operator: In
+                    values:
+                      - "true"
       containers:
         - name: homebox
           image: ghcr.io/sysadminsmedia/homebox:latest
