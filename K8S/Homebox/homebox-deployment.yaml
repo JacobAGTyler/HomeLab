@@ -33,7 +33,7 @@ spec:
             - name: HBOX_LOG_FORMAT
               value: text
             - name: HBOX_LOG_LEVEL
-              value: info
+              value: warning
             - name: HBOX_OPTIONS_ALLOW_ANALYTICS
               value: "false"
             - name: HBOX_WEB_MAX_UPLOAD
@@ -57,8 +57,42 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: homebox-data
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - name: web-http
+              containerPort: 80
+              protocol: TCP
+            - name: web-https
+              containerPort: 443
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /api/v1/status
+              port: web-http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/status
+              port: web-http
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: homebox-tls
+              mountPath: /etc/nginx/tls
+              readOnly: true
       restartPolicy: Always
       volumes:
         - name: homebox-data
           persistentVolumeClaim:
             claimName: homebox-data
+        - name: nginx-config
+          configMap:
+            name: homebox-nginx
+        - name: homebox-tls
+          secret:
+            secretName: homebox-tls

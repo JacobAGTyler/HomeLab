@@ -3,6 +3,8 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - homebox-certificate.yaml
+  - homebox-nginx-configmap.yaml
   - homebox-data-persistentvolumeclaim.yaml
   - homebox-deployment.yaml
   - homebox-service.yaml
