@@ -61,10 +61,10 @@ spec:
           image: nginx:1.27-alpine
           ports:
             - name: web-http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
             - name: web-https
-              containerPort: 443
+              containerPort: 8443
               protocol: TCP
           readinessProbe:
             httpGet:
