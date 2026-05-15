@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: home-apps
+  namespace: argocd
+spec:
+  description: Home application workloads
+  sourceRepos:
+    - https://github.com/JacobAGTyler/HomeLab.git
+  destinations:
+    - namespace: 'homebox'
+      server: '*'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

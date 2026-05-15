@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homebox
+  namespace: argocd
+spec:
+  project: home-apps
+  source:
+    repoURL: https://github.com/JacobAGTyler/HomeLab.git
+    targetRevision: main
+    path: K8S/Homebox
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: homebox
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
