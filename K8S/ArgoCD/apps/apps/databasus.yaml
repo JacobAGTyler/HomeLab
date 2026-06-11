@@ -16,6 +16,13 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: databasus
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      name: databasus
+      namespace: databasus
+      jqPathExpressions:
+        - .spec.volumeClaimTemplates[]?.spec.volumeMode
   syncPolicy:
     automated:
       prune: true

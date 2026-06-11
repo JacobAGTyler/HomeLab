@@ -35,12 +35,15 @@ spec:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: postgres-data
       spec:
         accessModes:
           - ReadWriteOnce
         storageClassName: local-db-ssd-rwo
+        volumeMode: Filesystem
         resources:
           requests:
             storage: 100Gi
