@@ -18,6 +18,8 @@ resources:
   - apps/homebox.yaml
 
   # LBD Applications
+  - apps/district-badges-test.yaml
+  - apps/district-badges-prod.yaml
   - apps/district-cms-dev.yaml
   - apps/district-cms-prod.yaml
   - apps/district-core-data.yaml

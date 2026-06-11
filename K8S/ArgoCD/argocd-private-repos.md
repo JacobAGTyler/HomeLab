@@ -23,6 +23,7 @@ Recommended values:
 This org-level credential should cover:
 
 - `https://github.com/LBDistrictScouts/DistrictCoreData.git`
+- `https://github.com/LBDistrictScouts/DistrictBadges.git`
 - `https://github.com/LBDistrictScouts/EventBookingBackend.git`
 
 Notes:
