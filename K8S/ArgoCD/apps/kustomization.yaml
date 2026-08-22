@@ -23,6 +23,8 @@ resources:
   - apps/district-cms-dev.yaml
   - apps/district-cms-prod.yaml
   - apps/district-core-data.yaml
+  - apps/district-team-test.yaml
+  - apps/district-team-prod.yaml
   - apps/event-booking-backend.yaml
   - apps/event-booking-backend-test.yaml
 

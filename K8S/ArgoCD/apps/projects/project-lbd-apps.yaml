@@ -9,6 +9,7 @@ spec:
     - https://github.com/LBDistrictScouts/DistrictCoreData.git
     - https://github.com/LBDistrictScouts/DistrictCMS.git
     - https://github.com/LBDistrictScouts/DistrictBadges.git
+    - https://github.com/LBDistrictScouts/DistrictTeam.git
     - https://github.com/LBDistrictScouts/EventBookingBackend.git
   destinations:
     - namespace: district-badges-test
@@ -20,6 +21,10 @@ spec:
     - namespace: district-cms-prod
       server: '*'
     - namespace: district-core-data
+      server: '*'
+    - namespace: district-team-test
+      server: '*'
+    - namespace: district-team-prod
       server: '*'
     - namespace: event-booking
       server: '*'
