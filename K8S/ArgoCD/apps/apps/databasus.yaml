@@ -22,6 +22,8 @@ spec:
       name: databasus
       namespace: databasus
       jqPathExpressions:
+        - .spec.volumeClaimTemplates[]?.apiVersion
+        - .spec.volumeClaimTemplates[]?.kind
         - .spec.volumeClaimTemplates[]?.spec.volumeMode
   syncPolicy:
     automated:
