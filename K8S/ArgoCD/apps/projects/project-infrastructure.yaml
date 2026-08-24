@@ -8,6 +8,7 @@ spec:
   sourceRepos:
     - https://github.com/JacobAGTyler/HomeLab.git
     - ghcr.io/databasus/charts
+    - ghcr.io/actions/actions-runner-controller-charts
   destinations:
     - namespace: '*'
       server: '*'

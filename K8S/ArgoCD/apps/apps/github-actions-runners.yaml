@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: github-actions-runners
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: infrastructure
+  sources:
+    - repoURL: ghcr.io/actions/actions-runner-controller-charts
+      chart: gha-runner-scale-set
+      targetRevision: 0.14.2
+      helm:
+        releaseName: homelab-runners
+        values: |
+          githubConfigUrl: https://github.com/JacobAGTyler/HomeLab
+          githubConfigSecret: github-actions-runner-auth
+
+          minRunners: 0
+          maxRunners: 3
+
+          # Provides a Docker daemon for workflows that build container images.
+          # This requires privileged runner pods; see the README before enabling
+          # untrusted pull-request workflows on this scale set.
+          containerMode:
+            type: dind
+    - repoURL: https://github.com/JacobAGTyler/HomeLab.git
+      targetRevision: main
+      path: K8S/GitHubActionsRunners
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arc-runners
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+      - SkipDryRunOnMissingResource=true
