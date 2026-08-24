@@ -17,6 +17,12 @@ spec:
           githubConfigUrl: https://github.com/JacobAGTyler/HomeLab
           githubConfigSecret: github-actions-runner-auth
 
+          # Argo CD renders Helm without chart lookup access to the live
+          # cluster, so ARC controller discovery must be explicit.
+          controllerServiceAccount:
+            namespace: arc-systems
+            name: arc-gha-rs-controller
+
           minRunners: 0
           maxRunners: 3
 
