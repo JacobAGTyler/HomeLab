@@ -10,7 +10,10 @@ for `homepage.jacobagtyler.com`. Point that DNS name at the allocated Service IP
 The Homepage image remains `ghcr.io/gethomepage/homepage:latest`.
 
 Configuration lives in `config/` and is generated into a ConfigMap. Its content
-hash changes the Deployment reference so config edits trigger a rollout.
+hash changes the Deployment reference so config edits trigger a rollout. An init
+container copies the managed files into a writable emptyDir so Homepage can
+create additional required configuration files. Runtime changes are ephemeral;
+keep durable configuration edits in Git.
 Home Assistant and UniFi widgets use Homepage runtime environment substitution;
 the old Terraform code embedded literal `op://` references without resolving them.
 The 1Password operator manages the `homepage-widget-credentials` Secret from

@@ -19,6 +19,16 @@ spec:
     spec:
       serviceAccountName: homepage
       automountServiceAccountToken: true
+      initContainers:
+        - name: initialize-config
+          image: ghcr.io/gethomepage/homepage:latest
+          command: ["sh", "-c", "cp -R /config-source/. /config/"]
+          volumeMounts:
+            - name: homepage-config-source
+              mountPath: /config-source
+              readOnly: true
+            - name: homepage-config
+              mountPath: /config
       containers:
         - name: homepage
           image: ghcr.io/gethomepage/homepage:latest
@@ -56,7 +66,6 @@ spec:
           volumeMounts:
             - name: homepage-config
               mountPath: /app/config
-              readOnly: true
             - name: logs
               mountPath: /app/config/logs
         - name: nginx
@@ -87,6 +96,8 @@ spec:
           secret:
             secretName: homepage-tls
         - name: homepage-config
+          emptyDir: {}
+        - name: homepage-config-source
           configMap:
             name: homepage-config
         - name: logs
