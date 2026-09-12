@@ -116,6 +116,8 @@ metadata:
   name: portainer
   namespace: portainer
   annotations:
+    # Replace the port list when adopting Helm's https:9443 Service.
+    argocd.argoproj.io/sync-options: Replace=true
     metallb.io/address-pool: main-pool
     metallb.io/loadBalancerIPs: 10.3.0.101
 spec:

@@ -109,3 +109,14 @@ kubectl kustomize K8S/ArgoCD/apps
 
 These render manifests only; successful scheduling, TLS issuance and backup
 restoration require validation on the target cluster.
+
+## Service adoption and duplicate HTTPS ports
+
+The legacy Helm Service exposes `https` on 9443 and `edge` on 8000. This bundle
+exposes `https` on 443. Apply merges Service ports by port number, which can keep
+the old 9443 entry and reject the new entry with a duplicate `https` name.
+The Service has `argocd.argoproj.io/sync-options: Replace=true` so Argo replaces
+the specification instead of merging the port list. This overrides server-side
+apply for this Service only; no `Force=true` delete/recreate is configured.
+Clients using the old 9443 or 8000 ports must switch to HTTPS on 443.
+See [Argo sync options](https://argo-cd.readthedocs.io/en/release-3.3/user-guide/sync-options/).
