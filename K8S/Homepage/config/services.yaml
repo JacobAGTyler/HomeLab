@@ -7,7 +7,7 @@
         widget:
           type: homeassistant
           url: https://home-assistant.jacobagtyler.com
-          key: "${hass_token}"
+          key: "{{HOMEPAGE_VAR_HASS_TOKEN}}"
           custom:
             - state: sensor.total_power
             - state: sensor.total_energy_today
@@ -26,8 +26,8 @@
         widget:
           type: unifi
           url: https://10.1.0.1
-          username: "${unifi_username}"
-          password: "${unifi_password}"
+          username: "{{HOMEPAGE_VAR_UNIFI_USERNAME}}"
+          password: "{{HOMEPAGE_VAR_UNIFI_PASSWORD}}"
 
 - My Third Group:
     - My Third Service:

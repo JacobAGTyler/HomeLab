@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: homepage
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: homepage
+    spec:
+      serviceAccountName: homepage
+      automountServiceAccountToken: true
+      containers:
+        - name: homepage
+          image: ghcr.io/gethomepage/homepage:latest
+          imagePullPolicy: Always
+          env:
+            - name: HOMEPAGE_ALLOWED_HOSTS
+              value: homepage.jacobagtyler.com
+            - name: HOMEPAGE_VAR_UNIFI_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-widget-credentials
+                  key: User
+            - name: HOMEPAGE_VAR_UNIFI_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-widget-credentials
+                  key: Password
+            - name: HOMEPAGE_VAR_HASS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-widget-credentials
+                  key: Long-Lived-Token
+          ports:
+            - name: http
+              containerPort: 3000
+          resources:
+            limits:
+              memory: 128Mi
+              cpu: 500m
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: homepage-config
+              mountPath: /app/config
+              readOnly: true
+            - name: logs
+              mountPath: /app/config/logs
+      volumes:
+        - name: homepage-config
+          configMap:
+            name: homepage-config
+        - name: logs
+          emptyDir: {}

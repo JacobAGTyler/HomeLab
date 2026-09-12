@@ -31,9 +31,7 @@ The following directories currently have their own documentation:
 # Planned Projects
 
 - ArgoCD Ingest:
-    - Databacus
     - N8N
-    - Portainer
 - Infra:
     - RustFS
     - Prometheus + Monitoring

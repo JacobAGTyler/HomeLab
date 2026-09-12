@@ -23,13 +23,11 @@ module "cert_manager" {
 
 # }
 
-module "homepage" {
-  source = "./modules/homepage"
-
-  providers = {
-    kubernetes  = kubernetes
-    local       = local
-    onepassword = onepassword
+# Hand Homepage resources to Argo CD without deleting the live installation.
+removed {
+  from = module.homepage
+  lifecycle {
+    destroy = false
   }
 }
 

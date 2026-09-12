@@ -8,6 +8,8 @@ spec:
   sourceRepos:
     - https://github.com/JacobAGTyler/HomeLab.git
   destinations:
+    - namespace: 'homepage'
+      server: '*'
     - namespace: 'homebox'
       server: '*'
   clusterResourceWhitelist:

@@ -20,6 +20,7 @@ resources:
 
   # Home Applications
   - apps/homebox.yaml
+  - apps/homepage.yaml
 
   # LBD Applications
   - apps/district-badges-test.yaml
