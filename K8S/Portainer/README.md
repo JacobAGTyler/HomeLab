@@ -1,6 +1,6 @@
 # Portainer managed by Argo CD
 
-This bundle runs one Portainer CE `2.39.3` replica in `portainer`, with a
+This bundle runs one Portainer CE `2.45.0` replica in `portainer`, with a
 10Gi ReadWriteOnce PVC and a Recreate deployment strategy. It uses the existing
 MetalLB address `10.3.0.101`, exposes HTTPS on port 443, and obtains TLS for
 `portainer.jacobagtyler.com` from cert-manager's `letsencrypt-prod` ClusterIssuer.
@@ -29,7 +29,7 @@ to main, because the root application will discover and automatically sync it.
    `kubectl get deploy,svc,pvc -n portainer -o yaml`. Confirm the deployment
    selector, claim name (`portainer`), requested capacity, and service address
    match this bundle. Adjust the manifests if the live objects differ. Do not
-   downgrade a live instance newer than `2.39.3`.
+   downgrade a live instance newer than `2.45.0`.
 2. Retire Terraform ownership without destroying the resources: back up Terraform
    state, remove the Portainer module call from configuration, and remove its
    resources from state (or use Terraform removed blocks with destroy disabled).
@@ -42,6 +42,21 @@ to main, because the root application will discover and automatically sync it.
 4. Once direct local connectivity is verified, the old agent deployment and its
    two services can be removed if nothing else uses them. Argo will not prune
    resources it has never managed. Leave the shared server service account intact.
+
+## Upgrade to 2.45.0
+
+The server image is pinned to `portainer/portainer-ce:2.45.0`.
+Take a fresh Portainer backup before syncing this version through Argo CD.
+The single-replica Recreate strategy causes a brief Portainer outage during the
+upgrade. Check the deployment rollout and local environment connectivity afterward.
+Keep the pre-upgrade backup for recovery; reverting only the image tag may not
+undo database migrations.
+
+For the supplied `2.39.3` backup, restore into `2.39.3` first by temporarily pinning
+that version in Git, verify the restore, then update the pin to `2.45.0` and sync.
+
+See the [2.45.0 release notes](https://github.com/portainer/portainer/releases/tag/2.45.0)
+and [Kubernetes upgrade guidance](https://docs.portainer.io/start/upgrade/kubernetes).
 
 ## Deploy a fresh instance and restore
 

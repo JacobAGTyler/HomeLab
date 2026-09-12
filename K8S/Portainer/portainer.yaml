@@ -75,7 +75,7 @@ spec:
             secretName: portainer-tls
       containers:
         - name: portainer
-          image: portainer/portainer-ce:2.39.3
+          image: portainer/portainer-ce:2.45.0
           imagePullPolicy: IfNotPresent
           args:
             - --http-disabled
