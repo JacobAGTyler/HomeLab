@@ -16,7 +16,7 @@ resources:
   - apps/portainer.yaml
   - apps/metallb-config.yaml
   - apps/storage-local-db-ssd.yaml
-  # - apps/storage-truenas-nfs.yaml
+  - apps/storage-truenas-nfs.yaml
 
   # Home Applications
   - apps/homebox.yaml

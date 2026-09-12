@@ -18,12 +18,13 @@ kubectl apply -k K8S/Storage/TrueNAS-NFS
 
 Before you apply:
 
-1. Edit [provisioner-truenas-a.yaml](/Users/jacob/Development/Homelab/K8S/Storage/TrueNAS-NFS/provisioner-truenas-a.yaml) for the HDD-backed NAS and replace:
-   - `REPLACE_WITH_TRUENAS_HDD_IP`
-   - `REPLACE_WITH_TRUENAS_HDD_EXPORT_PATH`
-2. Edit [provisioner-truenas-b.yaml](/Users/jacob/Development/Homelab/K8S/Storage/TrueNAS-NFS/provisioner-truenas-b.yaml) for the SSD-backed NAS and replace:
-   - `REPLACE_WITH_TRUENAS_SSD_IP`
-   - `REPLACE_WITH_TRUENAS_SSD_EXPORT_PATH`
+1. Confirm the HDD export in [provisioner-truenas-a.yaml](provisioner-truenas-a.yaml):
+   `terra-nas.jacobagtyler.com:/mnt/HDDs/K8S`.
+2. Confirm the SSD export in [provisioner-truenas-b.yaml](provisioner-truenas-b.yaml):
+   `bee-nas.jacobagtyler.com:/mnt/SSDs/K8S`.
+   Both Kubernetes exports allow node IPs `10.3.0.11` through `10.3.0.15` and map
+   client root to root so the provisioner can create PVC directories. Update
+   each export's host list when adding nodes. NFS is enabled at boot.
 3. Make sure every k3s node has NFS client packages installed.
    - On Ubuntu/Debian that is usually `nfs-common`
    - You can install it across the cluster with [install-nfs-client.yml](/Users/jacob/Development/Homelab/TuringPi/install-nfs-client.yml)

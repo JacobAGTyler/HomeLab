@@ -13,6 +13,10 @@ spec:
       values: |
         service:
           type: LoadBalancer
+        persistence:
+          storageClassName: truenas-fast-rwx
+          accessMode: ReadWriteMany
+          size: 10Gi
   destination:
     server: https://kubernetes.default.svc
     namespace: databasus

@@ -18,15 +18,15 @@ spec:
       serviceAccountName: nfs-subdir-external-provisioner
       containers:
         - name: nfs-subdir-external-provisioner
-          image: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.18
+          image: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
           imagePullPolicy: IfNotPresent
           env:
             - name: PROVISIONER_NAME
               value: homelab.jacobagtyler.com/truenas-ssd-nfs
             - name: NFS_SERVER
-              value: REPLACE_WITH_TRUENAS_SSD_IP
+              value: bee-nas.jacobagtyler.com
             - name: NFS_PATH
-              value: REPLACE_WITH_TRUENAS_SSD_EXPORT_PATH
+              value: /mnt/SSDs/K8S
           resources:
             requests:
               cpu: 50m
@@ -39,8 +39,8 @@ spec:
       volumes:
         - name: nfs-client-root
           nfs:
-            server: REPLACE_WITH_TRUENAS_SSD_IP
-            path: REPLACE_WITH_TRUENAS_SSD_EXPORT_PATH
+            server: bee-nas.jacobagtyler.com
+            path: /mnt/SSDs/K8S
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
