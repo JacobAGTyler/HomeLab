@@ -6,12 +6,15 @@ resources:
   - deployment.yaml
   - widget-credentials-onepassworditem.yaml
   - manifests/hp-service.yml
-  - manifests/hp-ingress.yml
+  - homepage-certificate.yaml
   - manifests/hp-service-account.yml
   - manifests/hp-secret.yml
   - manifests/hp-cluster-role.yml
   - manifests/hp-cluster-role-binding.yml
 configMapGenerator:
+  - name: homepage-nginx
+    files:
+      - default.conf=nginx/default.conf
   - name: homepage-config
     files:
       - config/bookmarks.yaml

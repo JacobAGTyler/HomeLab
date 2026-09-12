@@ -2,11 +2,12 @@
 
 Homepage now lives in this Kustomize bundle. The `homepage` Argo CD Application
 belongs to `home-apps` and tracks `K8S/Homepage` on `main`.
-The existing namespace, deployment selector, Service, Ingress hostname
-(`homepage.jacobagtyler.com`), service account and discovery RBAC are preserved.
-The image remains `ghcr.io/gethomepage/homepage:latest`, as in Terraform.
-Ingress still relies on the cluster's default ingress controller and existing
-routing/TLS setup; this migration does not provision DNS or a certificate.
+Homepage uses a MetalLB LoadBalancer Service on ports 80 and 443, with an Nginx
+sidecar terminating HTTPS and redirecting HTTP to HTTPS. MetalLB allocates an
+available address from `main-pool`; no unverified static IP is reserved.
+The `homepage-tls` Certificate uses the existing `letsencrypt-prod` ClusterIssuer
+for `homepage.jacobagtyler.com`. Point that DNS name at the allocated Service IP.
+The Homepage image remains `ghcr.io/gethomepage/homepage:latest`.
 
 Configuration lives in `config/` and is generated into a ConfigMap. Its content
 hash changes the Deployment reference so config edits trigger a rollout.
@@ -41,12 +42,14 @@ Commit and push to main for the root Argo application to discover and sync
 ```bash
 kubectl -n homepage get onepassworditem homepage-widget-credentials
 kubectl -n homepage get secret homepage-widget-credentials -o name
+kubectl -n homepage get service homepage
+kubectl -n homepage get certificate homepage-tls
 kubectl -n homepage rollout status deployment/homepage
 ```
 
 Open `homepage.jacobagtyler.com` and check the Home Assistant/UniFi widgets and
-application discovery. This configuration relies on existing DNS and ingress
-routing. Live sync and operator reconciliation have not been verified locally.
+application discovery. MetalLB and the certificate issuer must be working; the pod waits for
+the TLS Secret to be issued. Update DNS after the LoadBalancer IP is allocated. Live sync and operator reconciliation have not been verified locally.
 The service-account-token Secret is retained for adoption compatibility.
 
 ## Automatic discovery
@@ -63,8 +66,16 @@ metadata:
     gethomepage.dev/icon: homebox.png
 ```
 
-Homepage's own Ingress is already annotated. External links and widgets remain
-in `config/services.yaml`. No other application's manifests are changed here.
+Homepage does not expose an Ingress. Native Homepage discovery reads Ingress
+resources, not LoadBalancer Services. Apps exposed only via LoadBalancer need
+entries in `config/services.yaml` (or a separate discovery integration).
+No other application's manifests are changed here.
+
+If Argo previously managed the Homepage Ingress, pruning removes it during sync.
+An old Ingress created outside Argo may require manual removal after verifying
+LoadBalancer access. When the TLS Secret renews, restart the Homepage deployment
+to make Nginx load the new certificate; no certificate reload controller is
+configured in this bundle.
 
 ## Validation
 
