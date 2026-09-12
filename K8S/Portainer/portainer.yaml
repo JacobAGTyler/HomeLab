@@ -22,7 +22,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: portainer
   namespace: portainer
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
+  # Use the cluster default for a new claim; preserve the existing class on adoption.
   accessModes:
     - ReadWriteOnce
   resources:
@@ -72,8 +75,8 @@ spec:
             secretName: portainer-tls
       containers:
         - name: portainer
-          image: portainer/portainer-ce:lts
-          imagePullPolicy: Always
+          image: portainer/portainer-ce:2.39.3
+          imagePullPolicy: IfNotPresent
           args:
             - --http-disabled
             - --tlscert=/certs/tls.crt
@@ -87,9 +90,6 @@ spec:
           ports:
             - name: https
               containerPort: 9443
-              protocol: TCP
-            - name: tcp-edge
-              containerPort: 8000
               protocol: TCP
           livenessProbe:
             failureThreshold: 5
@@ -116,8 +116,8 @@ metadata:
   name: portainer
   namespace: portainer
   annotations:
-    metallb.io/ip-allocated-from-pool: main-pool
-    metallb.universe.tf/loadBalancerIPs: 10.3.0.101
+    metallb.io/address-pool: main-pool
+    metallb.io/loadBalancerIPs: 10.3.0.101
 spec:
   type: LoadBalancer
   selector:
@@ -127,8 +127,4 @@ spec:
     - name: https
       port: 443
       targetPort: 9443
-      protocol: TCP
-    - name: edge
-      port: 8000
-      targetPort: 8000
       protocol: TCP

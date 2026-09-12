@@ -13,6 +13,7 @@ resources:
   - apps/github-actions-runner-controller.yaml
   - apps/github-actions-runners.yaml
   - apps/github-actions-runners-lbdistrictscouts.yaml
+  - apps/portainer.yaml
   - apps/metallb-config.yaml
   - apps/storage-local-db-ssd.yaml
   # - apps/storage-truenas-nfs.yaml
